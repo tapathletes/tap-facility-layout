@@ -994,8 +994,9 @@
         scene.add(sign);
       }
 
-      // Floor grate (1×1 ft, code-required) — gym floor, right of door when
-      // looking at the bathroom from the gym (i.e. -z side of door midpoint).
+      // Floor grate (1×1 ft, code-required) — gym floor, tucked into the corner
+      // where the bathroom's gym-facing wall meets the side wall at z=bz1
+      // (right edge when looking at the bathroom from the gym).
       {
         const grateW = 1, grateD = 1, grateThk = 0.05;
         const grateMat = new THREE.MeshStandardMaterial({
@@ -1006,9 +1007,9 @@
           grateMat
         );
         grate.position.set(
-          bx2 + 0.1 + grateW/2,                // just outside the gym-facing wall
-          grateThk/2,                          // sitting on the floor
-          doorCenterZ - doorWidth/2 - grateD/2 // adjacent to door's right edge
+          bx2 + 0.1 + grateW/2,    // just outside the gym-facing wall
+          grateThk/2,              // sitting on the floor
+          bz1 + grateD/2           // flush with the side wall at z=bz1
         );
         scene.add(grate);
       }
