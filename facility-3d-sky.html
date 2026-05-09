@@ -780,22 +780,35 @@
     }
 
     // Motivational quote on the back wall (replaces the TAP lockup that used to live here).
+    // Auto-fits the quote font size to keep the text within the canvas, then
+    // scales the attribution proportionally.
     function makeQuoteTexture() {
       const c = document.createElement('canvas');
       c.width = 1536; c.height = 384;
       const ctx = c.getContext('2d');
 
-      // Quote — same brand color + Inter as the lockup, larger weight
+      const quote = '"IT TAKES WHAT IT TAKES"';
+      const attr  = '— NICK SABAN';
+
+      // Auto-fit quote to ~85% of canvas width
+      let quoteSize = 120;
+      ctx.font = `900 ${quoteSize}px Inter, sans-serif`;
+      const target = c.width * 0.85;
+      while (ctx.measureText(quote).width > target && quoteSize > 40) {
+        quoteSize -= 4;
+        ctx.font = `900 ${quoteSize}px Inter, sans-serif`;
+      }
+
+      // Quote
       ctx.fillStyle = 'rgba(184,212,224,0.96)';
-      ctx.font = '900 130px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('"IT TAKES WHAT IT TAKES"', c.width / 2, 150);
+      ctx.fillText(quote, c.width / 2, 150);
 
-      // Attribution — lighter weight, dimmer
+      // Attribution — proportional to quote size
       ctx.fillStyle = 'rgba(184,212,224,0.65)';
-      ctx.font = '500 60px Inter, sans-serif';
-      ctx.fillText('— NICK SABAN', c.width / 2, 280);
+      ctx.font = `500 ${Math.floor(quoteSize * 0.45)}px Inter, sans-serif`;
+      ctx.fillText(attr, c.width / 2, 270);
 
       const tex = new THREE.CanvasTexture(c);
       tex.colorSpace = THREE.SRGBColorSpace;
@@ -806,10 +819,11 @@
     // shared lockup texture (used by all wall placements except back wall)
     const lockupTex = makeLockupTexture();
 
-    // Back wall — motivational quote (was TAP lockup)
+    // Back wall — motivational quote (was TAP lockup).
+    // 11 × 2.75 ft fits within the 12 ft cage interior (0.5 ft margin each side).
     {
       const decal = new THREE.Mesh(
-        new THREE.PlaneGeometry(16, 4),
+        new THREE.PlaneGeometry(11, 2.75),
         new THREE.MeshBasicMaterial({ map: makeQuoteTexture(), transparent: true })
       );
       decal.position.set(79.95, 7, 7.17); // centered on cage width (cageZ1+cageZ2)/2 — hardcoded because cage consts are declared later in the file
