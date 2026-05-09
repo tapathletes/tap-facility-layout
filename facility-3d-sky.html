@@ -812,7 +812,7 @@
         new THREE.PlaneGeometry(16, 4),
         new THREE.MeshBasicMaterial({ map: makeQuoteTexture(), transparent: true })
       );
-      decal.position.set(79.95, 7, (cageZ1 + cageZ2) / 2); // centered on cage width
+      decal.position.set(79.95, 7, 7.17); // centered on cage width (cageZ1+cageZ2)/2 — hardcoded because cage consts are declared later in the file
       decal.rotation.y = -Math.PI / 2;
       scene.add(decal);
     }
