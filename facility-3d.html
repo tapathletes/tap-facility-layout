@@ -320,8 +320,62 @@
     const matMoundTop = new THREE.MeshStandardMaterial({ color: PAL.moundTop, roughness: 0.7 });
     const matRubber = new THREE.MeshStandardMaterial({ color: PAL.rubber, roughness: 0.5 });
     const matBathWall = new THREE.MeshStandardMaterial({ color: PAL.bathWall, roughness: 0.85, side: THREE.DoubleSide });
+    // Faked glassy mirror — gradient texture with subtle streaks, shiny + slightly metallic.
+    function makeMirrorTexture() {
+      const c = document.createElement('canvas');
+      c.width = 1024; c.height = 384;
+      const ctx = c.getContext('2d');
+      // vertical gradient: ceiling-tone at top → floor/wall tone at bottom
+      const grad = ctx.createLinearGradient(0, 0, 0, c.height);
+      grad.addColorStop(0,    '#dfeef5');
+      grad.addColorStop(0.45, '#cfe1ec');
+      grad.addColorStop(0.55, '#bcd2dd');
+      grad.addColorStop(1,    '#7d96a3');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, c.width, c.height);
+
+      // hint of horizon line where ceiling reflection meets floor reflection
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.fillRect(0, c.height * 0.50, c.width, 1);
+
+      // soft diagonal streaks
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 14;
+      for (let i = -3; i < 12; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * 100,            0);
+        ctx.lineTo(i * 100 + 280, c.height);
+        ctx.stroke();
+      }
+      // a couple of brighter highlight streaks
+      ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+      ctx.lineWidth = 6;
+      for (const x of [220, 540, 820]) {
+        ctx.beginPath();
+        ctx.moveTo(x,            0);
+        ctx.lineTo(x + 200, c.height);
+        ctx.stroke();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+
+      // very subtle bottom haze (like a smudge / floor reflection blur)
+      const bottom = ctx.createLinearGradient(0, c.height * 0.7, 0, c.height);
+      bottom.addColorStop(0, 'rgba(40,55,70,0)');
+      bottom.addColorStop(1, 'rgba(40,55,70,0.25)');
+      ctx.fillStyle = bottom;
+      ctx.fillRect(0, c.height * 0.7, c.width, c.height * 0.3);
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 8;
+      return tex;
+    }
     const matMirror = new THREE.MeshStandardMaterial({
-      color: PAL.mirror, roughness: 0.05, metalness: 0.9,
+      map: makeMirrorTexture(),
+      roughness: 0.08,
+      metalness: 0.85,
+      envMapIntensity: 1.2,
     });
     const matMirrorFrame = new THREE.MeshStandardMaterial({ color: PAL.mirrorFrame, roughness: 0.55, metalness: 0.5 });
     const matWood = new THREE.MeshStandardMaterial({ color: PAL.wood, roughness: 0.8 });
@@ -823,14 +877,60 @@
       m.receiveShadow = true;
       scene.add(m);
     }
-    // Turf stripes (every 4 ft along z)
-    for (let z = cageZ1 + 2; z < cageZ2; z += 4) {
-      const s = new THREE.Mesh(
-        new THREE.BoxGeometry(cageX2-cageX1, 0.005, 2),
-        new THREE.MeshStandardMaterial({ color: PAL.turfStripe, roughness: 0.95 })
-      );
-      s.position.set((cageX1+cageX2)/2, 0.063, z);
-      scene.add(s);
+    /* Distance markers across the turf — perpendicular to the lane direction.
+       Distance is measured from the BACK POINT of home plate (world x ≈ 68.15)
+       backward to where the FRONT EDGE OF THE PITCHING RUBBER would sit.
+       Plate at x=69 → back point: 69 - 0.85 = 68.15. */
+    {
+      const platePointX = 68.15;
+      const distances = [
+        { ft: 40,   label: "40'"    },
+        { ft: 46,   label: "46'"    },
+        { ft: 50,   label: "50'"    },
+        { ft: 54,   label: "54'"    },
+        { ft: 60.5, label: "60'6\"" },
+      ];
+      const lineMat = new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: 0.6 });
+
+      function makeDistanceLabel(text) {
+        const c = document.createElement('canvas');
+        c.width = 384; c.height = 128;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = 'rgba(255,255,255,0.94)';
+        ctx.font = '900 90px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, c.width / 2, c.height / 2);
+        const tex = new THREE.CanvasTexture(c);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = 8;
+        return tex;
+      }
+
+      distances.forEach(d => {
+        const x = platePointX - d.ft;
+        // painted line across the full cage width
+        const line = new THREE.Mesh(
+          new THREE.BoxGeometry(0.15, 0.005, cageZ2 - cageZ1),
+          lineMat
+        );
+        line.position.set(x, 0.064, (cageZ1 + cageZ2) / 2);
+        scene.add(line);
+
+        // labels — one per lane, painted on the turf so a pitcher reads them
+        // correctly when looking +x toward home plate. Three lanes match
+        // the three-mound layout (z = 5.5, 8, 10.5).
+        [5.5, 8, 10.5].forEach(zCenter => {
+          const labelMat = new THREE.MeshBasicMaterial({
+            map: makeDistanceLabel(d.label),
+            transparent: true,
+          });
+          const label = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.5), labelMat);
+          label.rotation.x = -Math.PI / 2;
+          label.position.set(x - 0.75, 0.066, zCenter);
+          scene.add(label);
+        });
+      });
     }
 
     // Net cage frame: vertical posts every 9 ft along x (8 posts each side spans 72 ft)
@@ -893,10 +993,13 @@
       body.position.set((x1+x2)/2, h/2, (z1+z2)/2);
       body.castShadow = true;
       scene.add(body);
-      // pitching rubber on top, near front of mound (toward home plate at +x).
+      // Pitching rubber on top, ~1.5 ft from the back of the mound (the -x edge,
+      // closest to the front net at x=5). Pitcher sets back foot on the rubber
+      // and strides forward (+x) toward home plate. With mound at x=7..13.333
+      // and rubber at x=8.5, rubber-to-plate (x=69) is regulation 60'-6".
       // Rubber is 2 ft wide (z) — nearly the full width of these narrow mounds.
       const rubber = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 2), matRubber);
-      rubber.position.set(x2 - 2, h + 0.04, (z1+z2)/2);
+      rubber.position.set(x1 + 1.5, h + 0.04, (z1+z2)/2);
       scene.add(rubber);
     }
     {
@@ -914,9 +1017,16 @@
     }
 
     /* ─────────────────────────────────────────────────────────────────
-       HOME PLATES — one per mound, aligned with mound centers.
-         Plate 1 at z=5.5,  Plate 2 at z=8.0,  Plate 3 at z=10.5
+       HOME PLATES — one per mound, each at x=69 lined up with its mound.
+       Plate at x=69 (moved from x=73 on 2026-05-09) gives an 8 ft catcher's
+       box behind the plate (x=69 to back net at x=77) and lands rubber-to-
+       plate at regulation 60'-6" (rubber x=8.5 → plate x=69).
+         Plate 1 at z=5.5  (lined up with Mound 1)
+         Plate 2 at z=8.0  (lined up with Mound 2)
+         Plate 3 at z=10.5 (lined up with Mound 3)
        Pentagon, point facing -x (toward pitcher).
+       Strike-zone targets are 2.2 ft wide (vs sky's 3 ft) so three of them
+       at 2.5 ft spacing don't overlap on the back net.
     ────────────────────────────────────────────────────────────────── */
     {
       const shape = new THREE.Shape();
@@ -933,7 +1043,7 @@
       [5.5, 8, 10.5].forEach(z => {
         const plate = new THREE.Mesh(geom, plateMat);
         plate.rotation.x = -Math.PI / 2;
-        plate.position.set(73, 0.07, z);
+        plate.position.set(69, 0.07, z);
         scene.add(plate);
 
         // Strike-zone target on back net (x=cageX2=77), centered above plate
@@ -1214,13 +1324,13 @@
         orbit.target.set(40, 0, 12.5);
       } else if (preset === 'mound') {
         setMode('walk');
-        // standing on the center mound, looking at center plate
-        walkCam.position.set(12, 5.6, 8);
-        walkCam.lookAt(73, 4.5, 8);
+        // on the center mound rubber (x=8.5), looking at center plate (x=69)
+        walkCam.position.set(9, 5.6, 8);
+        walkCam.lookAt(69, 4.5, 8);
       } else if (preset === 'plate') {
         setMode('walk');
-        // behind center home plate, looking back at the three mounds
-        walkCam.position.set(75, 5.6, 8);
+        // 4 ft behind center home plate, looking back at the three mounds
+        walkCam.position.set(73, 5.6, 8);
         walkCam.lookAt(8, 4.5, 8);
       } else if (preset === 'entry') {
         setMode('walk');
