@@ -879,29 +879,44 @@
     scene.add(netPanel(cageX2-cageX1, 0.05, cageZ2-cageZ1, (cageX1+cageX2)/2, cageH, (cageZ1+cageZ2)/2));
 
     /* ─────────────────────────────────────────────────────────────────
-       MOUNDS — at front of cage
-       Each 4' × 10', 0.8' tall. Long axis along x (toward back of cage).
-       Mound A: x=7..17, z=3..7
-       Mound B: x=7..17, z=9..13
+       MOUNDS — three portable mounds (6'4" × 2'6" × 10" tall) placed
+       side-by-side touching, centered in the 12 ft cage width.
+         Block footprint: 7'6" wide total, z = 4.25..11.75
+         Mound 1: z = 4.25..6.75   (center z = 5.5)
+         Mound 2: z = 6.75..9.25   (center z = 8.0)
+         Mound 3: z = 9.25..11.75  (center z = 10.5)
+       Long axis along x (toward home plate). Length 6'4" = 6.333 ft.
     ────────────────────────────────────────────────────────────────── */
-    // Portable mound spec 2026-05-09: 9' × 4' × 10" tall.
     function mound(x1, x2, z1, z2) {
       const w = x2 - x1, d = z2 - z1, h = 10/12; // 10 inches
       const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), matMoundTop);
       body.position.set((x1+x2)/2, h/2, (z1+z2)/2);
       body.castShadow = true;
       scene.add(body);
-      // pitching rubber on top, near back of mound (toward home plate at +x)
+      // pitching rubber on top, near front of mound (toward home plate at +x).
+      // Rubber is 2 ft wide (z) — nearly the full width of these narrow mounds.
       const rubber = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 2), matRubber);
       rubber.position.set(x2 - 2, h + 0.04, (z1+z2)/2);
       scene.add(rubber);
     }
-    mound(7, 16, 3, 7);   // Mound A — 9' × 4'
-    mound(7, 16, 9, 13);  // Mound B — 9' × 4'
+    {
+      const mLen = 6 + 4/12;          // 6'4"
+      const mWid = 2.5;                // 2'6"
+      const mx1 = 7, mx2 = mx1 + mLen; // x = 7..13.333
+      const blockCenterZ = 8;          // cage centerline (z=2..14)
+      const blockHalf = (3 * mWid) / 2; // 3.75
+      const z0 = blockCenterZ - blockHalf; // 4.25
+      for (let i = 0; i < 3; i++) {
+        const z1 = z0 + i * mWid;
+        const z2 = z1 + mWid;
+        mound(mx1, mx2, z1, z2);
+      }
+    }
 
     /* ─────────────────────────────────────────────────────────────────
-       HOME PLATE — at back of cage (x=73, z=8)
-       Pentagon, point facing -x (toward pitcher)
+       HOME PLATES — one per mound, aligned with mound centers.
+         Plate 1 at z=5.5,  Plate 2 at z=8.0,  Plate 3 at z=10.5
+       Pentagon, point facing -x (toward pitcher).
     ────────────────────────────────────────────────────────────────── */
     {
       const shape = new THREE.Shape();
@@ -909,26 +924,29 @@
       shape.lineTo(-0.4, 0.71); shape.lineTo(-0.85, 0); shape.lineTo(-0.4, -0.71);
       shape.closePath();
       const geom = new THREE.ExtrudeGeometry(shape, { depth: 0.06, bevelEnabled: false });
-      const plate = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: 0.4 }));
-      plate.rotation.x = -Math.PI / 2;
-      plate.position.set(73, 0.07, 8);
-      scene.add(plate);
+      const plateMat = new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: 0.4 });
+      const tgtMat = new THREE.MeshBasicMaterial({
+        color: 0xb8d4e0, transparent: true, opacity: 0.7, side: THREE.DoubleSide,
+      });
+      const bullseyeMat = new THREE.MeshBasicMaterial({ color: 0xb8d4e0, side: THREE.DoubleSide });
 
-      // Strike-zone target on back net (x=cageX2=77), facing -x
-      const tgt = new THREE.Mesh(
-        new THREE.PlaneGeometry(3, 2.5),
-        new THREE.MeshBasicMaterial({ color: 0xb8d4e0, transparent: true, opacity: 0.7, side: THREE.DoubleSide })
-      );
-      tgt.position.set(76.95, 3.7, 8);
-      tgt.rotation.y = -Math.PI / 2;
-      scene.add(tgt);
-      const bullseye = new THREE.Mesh(
-        new THREE.RingGeometry(0.35, 0.5, 32),
-        new THREE.MeshBasicMaterial({ color: 0xb8d4e0, side: THREE.DoubleSide })
-      );
-      bullseye.position.set(76.94, 3.7, 8);
-      bullseye.rotation.y = -Math.PI / 2;
-      scene.add(bullseye);
+      [5.5, 8, 10.5].forEach(z => {
+        const plate = new THREE.Mesh(geom, plateMat);
+        plate.rotation.x = -Math.PI / 2;
+        plate.position.set(73, 0.07, z);
+        scene.add(plate);
+
+        // Strike-zone target on back net (x=cageX2=77), centered above plate
+        const tgt = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.5), tgtMat);
+        tgt.position.set(76.95, 3.7, z);
+        tgt.rotation.y = -Math.PI / 2;
+        scene.add(tgt);
+
+        const bullseye = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.5, 32), bullseyeMat);
+        bullseye.position.set(76.94, 3.7, z);
+        bullseye.rotation.y = -Math.PI / 2;
+        scene.add(bullseye);
+      });
     }
 
     /* ─────────────────────────────────────────────────────────────────
@@ -1196,12 +1214,12 @@
         orbit.target.set(40, 0, 12.5);
       } else if (preset === 'mound') {
         setMode('walk');
-        // standing on Mound A, looking at home plate
-        walkCam.position.set(15, 5.6, 5);
+        // standing on the center mound, looking at center plate
+        walkCam.position.set(12, 5.6, 8);
         walkCam.lookAt(73, 4.5, 8);
       } else if (preset === 'plate') {
         setMode('walk');
-        // behind home plate, looking at the mounds
+        // behind center home plate, looking back at the three mounds
         walkCam.position.set(75, 5.6, 8);
         walkCam.lookAt(8, 4.5, 8);
       } else if (preset === 'entry') {
