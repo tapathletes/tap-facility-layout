@@ -222,7 +222,7 @@
          - mirror wall along z = 24.7, x = 10..40
          - plyo rack at x = 42..50, z = 22..24.5
          - kettlebell rack at x = 52..60, z = 22..24.5
-       Door: on front wall (x = 0), span z = 14..17
+       Door: on front wall (x = 0), span z = 14.625..17.625 (per architect: 7'-4 1/2" from z=25 edge)
     ────────────────────────────────────────────────────────────────── */
 
     const PAL = {
@@ -373,11 +373,10 @@
       tex.anisotropy = 8;
       return tex;
     }
-    const matMirror = new THREE.MeshStandardMaterial({
+    // Mirror uses MeshBasicMaterial so the faked-reflection texture renders at
+    // full brightness — MeshStandardMaterial was darkening it via metalness shading.
+    const matMirror = new THREE.MeshBasicMaterial({
       map: makeMirrorTexture(),
-      roughness: 0.08,
-      metalness: 0.85,
-      envMapIntensity: 1.2,
     });
     const matMirrorFrame = new THREE.MeshStandardMaterial({ color: PAL.mirrorFrame, roughness: 0.55, metalness: 0.5 });
     const matWood = new THREE.MeshStandardMaterial({ color: PAL.wood, roughness: 0.8 });
@@ -509,13 +508,13 @@
         m.rotation.y = -Math.PI / 2; // face -x (toward parking lot)
         return m;
       }
-      scene.add(pane(7,    14, 7,    14)); // left pane (z=0..14)
-      scene.add(pane(15.5,  3, 10.5,  7)); // transom over door (z=14..17, y=7..14)
-      scene.add(pane(21,    8, 7,    14)); // right pane (z=17..25)
+      scene.add(pane(7.3125, 14.625, 7,    14)); // left pane (z=0..14.625)
+      scene.add(pane(16.125,  3,     10.5,  7)); // transom over door (z=14.625..17.625, y=7..14)
+      scene.add(pane(21.3125, 7.375, 7,    14)); // right pane (z=17.625..25)
 
-      // Vertical mullions every 5 ft + at door jambs
+      // Vertical mullions every 5 ft + at door jambs (jambs at 14.625 and 17.625 per architect spec)
       const vMullionGeom = new THREE.BoxGeometry(0.5, 14, 0.25);
-      [0, 5, 10, 14, 17, 21, 25].forEach(z => {
+      [0, 5, 10, 14.625, 17.625, 21, 25].forEach(z => {
         const m = new THREE.Mesh(vMullionGeom, matMullion);
         m.position.set(0, 7, z);
         scene.add(m);
@@ -530,9 +529,9 @@
       scene.add(hRail(7));   // door head / transom break
       scene.add(hRail(14));
 
-      // Glass door (hinged on z=14 side, swung inward to interior)
+      // Glass door (hinged on z=14.625 side, swung inward to interior)
       const doorPivot = new THREE.Group();
-      doorPivot.position.set(0, 0, 14);
+      doorPivot.position.set(0, 0, 14.625);
       doorPivot.rotation.y = -Math.PI / 8;
       scene.add(doorPivot);
 
@@ -780,16 +779,40 @@
       return tex;
     }
 
-    // shared lockup texture (used by all wall placements)
+    // Motivational quote on the back wall (replaces the TAP lockup that used to live here).
+    function makeQuoteTexture() {
+      const c = document.createElement('canvas');
+      c.width = 1536; c.height = 384;
+      const ctx = c.getContext('2d');
+
+      // Quote — same brand color + Inter as the lockup, larger weight
+      ctx.fillStyle = 'rgba(184,212,224,0.96)';
+      ctx.font = '900 130px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('"IT TAKES WHAT IT TAKES"', c.width / 2, 150);
+
+      // Attribution — lighter weight, dimmer
+      ctx.fillStyle = 'rgba(184,212,224,0.65)';
+      ctx.font = '500 60px Inter, sans-serif';
+      ctx.fillText('— NICK SABAN', c.width / 2, 280);
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 8;
+      return tex;
+    }
+
+    // shared lockup texture (used by all wall placements except back wall)
     const lockupTex = makeLockupTexture();
 
-    // Back wall decal — left segment of back wall (z=0..15), behind the cage netting
+    // Back wall — motivational quote (was TAP lockup)
     {
       const decal = new THREE.Mesh(
-        new THREE.PlaneGeometry(12, 3.75),
-        new THREE.MeshBasicMaterial({ map: lockupTex, transparent: true })
+        new THREE.PlaneGeometry(16, 4),
+        new THREE.MeshBasicMaterial({ map: makeQuoteTexture(), transparent: true })
       );
-      decal.position.set(79.95, 7, 7.5);
+      decal.position.set(79.95, 7, (cageZ1 + cageZ2) / 2); // centered on cage width
       decal.rotation.y = -Math.PI / 2;
       scene.add(decal);
     }
@@ -1198,11 +1221,11 @@
     }
 
     /* ─────────────────────────────────────────────────────────────────
-       WELCOME MAT — just inside the front door (x=4..6, z=14..17)
+       WELCOME MAT — just inside the front door (x=4..6, z=14.625..17.625)
     ────────────────────────────────────────────────────────────────── */
     {
       const mat = new THREE.Mesh(new THREE.BoxGeometry(2, 0.04, 3), matMat);
-      mat.position.set(5, 0.07, 15.5);
+      mat.position.set(5, 0.07, 16.125);
       scene.add(mat);
     }
 

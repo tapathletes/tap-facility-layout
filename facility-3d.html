@@ -314,7 +314,8 @@
     const matCeiling = new THREE.MeshStandardMaterial({ color: PAL.ceiling, roughness: 0.9, side: THREE.DoubleSide });
     const matTurf = new THREE.MeshStandardMaterial({ color: PAL.turf, roughness: 0.95 });
     const matNet = new THREE.MeshStandardMaterial({
-      color: PAL.net, roughness: 0.5, transparent: true, opacity: 0.32, side: THREE.DoubleSide,
+      color: 0x6a6a6a, roughness: 0.6, transparent: true, opacity: 0.14,
+      side: THREE.DoubleSide, depthWrite: false,
     });
     const matFrame = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.55, metalness: 0.4 });
     const matMoundTop = new THREE.MeshStandardMaterial({ color: PAL.moundTop, roughness: 0.7 });
@@ -832,6 +833,17 @@
     const cageZcenter = (cageZ1 + cageZ2) / 2; // 7.115
     const cageH = 11;
 
+    // Mound layout: one regulation portable mound (9' × 4') paired with one
+    // compact mound (6'4" × 2'6"), touching, centered on cageZcenter.
+    // Compact sits on the lower-z side; regulation on the higher-z side.
+    const stdLen = 9,        stdWid = 4;
+    const smallLen = 6+4/12, smallWid = 2.5;
+    const moundBlockWid = stdWid + smallWid;                       // 6.5
+    const moundBlockZ0  = cageZcenter - moundBlockWid / 2;         // 3.865
+    const smallCenterZ  = moundBlockZ0 + smallWid / 2;             // 5.115
+    const stdCenterZ    = moundBlockZ0 + smallWid + stdWid / 2;    // 8.365
+    const laneCenters   = [smallCenterZ, stdCenterZ];
+
     // Wall padding on the LEFT long wall (z=0), spanning the cage length
     // (x = cageX1..cageX2) at cage height. Sits flush against the wall's
     // interior face; its outer face is the surface that ball traffic sees.
@@ -895,9 +907,9 @@
         scene.add(line);
 
         // labels — one per lane, painted on the turf so a pitcher reads them
-        // correctly when looking +x toward home plate. Three lanes match
-        // the three-mound layout (centered at cageZcenter, 2.5 ft spacing).
-        [cageZcenter - 2.5, cageZcenter, cageZcenter + 2.5].forEach(zCenter => {
+        // correctly when looking +x toward home plate. Two lanes match
+        // the compact + regulation mound layout.
+        laneCenters.forEach(zCenter => {
           const labelMat = new THREE.MeshBasicMaterial({
             map: makeDistanceLabel(d.label),
             transparent: true,
@@ -956,53 +968,42 @@
     scene.add(netPanel(cageX2-cageX1, 0.05, cageZ2-cageZ1, (cageX1+cageX2)/2, cageH, (cageZ1+cageZ2)/2));
 
     /* ─────────────────────────────────────────────────────────────────
-       MOUNDS — three portable mounds (6'4" × 2'6" × 10" tall) placed
-       side-by-side touching, centered in the 12 ft cage width.
-         Block footprint: 7'6" wide total, z = 4.25..11.75
-         Mound 1: z = 4.25..6.75   (center z = 5.5)
-         Mound 2: z = 6.75..9.25   (center z = 8.0)
-         Mound 3: z = 9.25..11.75  (center z = 10.5)
-       Long axis along x (toward home plate). Length 6'4" = 6.333 ft.
+       MOUNDS — one regulation portable mound (9' × 4' × 10") paired with
+       one compact mound (6'4" × 2'6" × 10"), touching, centered on the
+       cage centerline (cageZcenter = 7.115).
+         Compact:    x = 7..13.333, z = 3.865..6.365  (center z=5.115)
+         Regulation: x = 7..16,     z = 6.365..10.365 (center z=8.365)
+       Both rubbers at x=8.5 → regulation 60'-6" to plates at x=69.
     ────────────────────────────────────────────────────────────────── */
     function mound(x1, x2, z1, z2) {
-      const w = x2 - x1, d = z2 - z1, h = 10/12; // 10 inches
+      const w = x2 - x1, d = z2 - z1, h = 10/12; // 10 inches tall
       const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), matMoundTop);
       body.position.set((x1+x2)/2, h/2, (z1+z2)/2);
       body.castShadow = true;
       scene.add(body);
       // Pitching rubber on top, ~1.5 ft from the back of the mound (the -x edge,
       // closest to the front net at x=5). Pitcher sets back foot on the rubber
-      // and strides forward (+x) toward home plate. With mound at x=7..13.333
-      // and rubber at x=8.5, rubber-to-plate (x=69) is regulation 60'-6".
-      // Rubber is 2 ft wide (z) — nearly the full width of these narrow mounds.
+      // and strides forward (+x) toward home plate.
       const rubber = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 2), matRubber);
       rubber.position.set(x1 + 1.5, h + 0.04, (z1+z2)/2);
       scene.add(rubber);
     }
     {
-      const mLen = 6 + 4/12;            // 6'4"
-      const mWid = 2.5;                  // 2'6"
-      const mx1 = 7, mx2 = mx1 + mLen;   // x = 7..13.333
-      const blockHalf = (3 * mWid) / 2;  // 3.75
-      const z0 = cageZcenter - blockHalf;
-      for (let i = 0; i < 3; i++) {
-        const z1 = z0 + i * mWid;
-        const z2 = z1 + mWid;
-        mound(mx1, mx2, z1, z2);
-      }
+      const mx1 = 7;
+      // compact mound on the lower-z side
+      const smZ1 = moundBlockZ0;
+      const smZ2 = smZ1 + smallWid;
+      mound(mx1, mx1 + smallLen, smZ1, smZ2);
+      // regulation mound on the higher-z side, touching the compact one
+      const stZ1 = smZ2;
+      const stZ2 = stZ1 + stdWid;
+      mound(mx1, mx1 + stdLen, stZ1, stZ2);
     }
 
     /* ─────────────────────────────────────────────────────────────────
-       HOME PLATES — one per mound, each at x=69 lined up with its mound.
-       Plate at x=69 (moved from x=73 on 2026-05-09) gives an 8 ft catcher's
-       box behind the plate (x=69 to back net at x=77) and lands rubber-to-
-       plate at regulation 60'-6" (rubber x=8.5 → plate x=69).
-         Plate 1 at z=5.5  (lined up with Mound 1)
-         Plate 2 at z=8.0  (lined up with Mound 2)
-         Plate 3 at z=10.5 (lined up with Mound 3)
-       Pentagon, point facing -x (toward pitcher).
-       Strike-zone targets are 2.2 ft wide (vs sky's 3 ft) so three of them
-       at 2.5 ft spacing don't overlap on the back net.
+       HOME PLATES — one per mound at x=69 (8' catcher's box behind),
+       aligned with each mound's center. Pentagon, point facing -x toward
+       the pitcher. Strike-zone targets sit on the back net (x≈77).
     ────────────────────────────────────────────────────────────────── */
     {
       const shape = new THREE.Shape();
@@ -1016,14 +1017,14 @@
       });
       const bullseyeMat = new THREE.MeshBasicMaterial({ color: 0xb8d4e0, side: THREE.DoubleSide });
 
-      [cageZcenter - 2.5, cageZcenter, cageZcenter + 2.5].forEach(z => {
+      laneCenters.forEach(z => {
         const plate = new THREE.Mesh(geom, plateMat);
         plate.rotation.x = -Math.PI / 2;
         plate.position.set(69, 0.07, z);
         scene.add(plate);
 
         // Strike-zone target on back net (x=cageX2=77), centered above plate
-        const tgt = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.5), tgtMat);
+        const tgt = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 2.5), tgtMat);
         tgt.position.set(76.95, 3.7, z);
         tgt.rotation.y = -Math.PI / 2;
         scene.add(tgt);
@@ -1300,12 +1301,12 @@
         orbit.target.set(40, 0, 12.5);
       } else if (preset === 'mound') {
         setMode('walk');
-        // on the center mound rubber (x=8.5), looking at center plate (x=69)
-        walkCam.position.set(9, 5.6, cageZcenter);
-        walkCam.lookAt(69, 4.5, cageZcenter);
+        // standing on the regulation mound's rubber, looking at its plate
+        walkCam.position.set(9, 5.6, stdCenterZ);
+        walkCam.lookAt(69, 4.5, stdCenterZ);
       } else if (preset === 'plate') {
         setMode('walk');
-        // 4 ft behind center home plate, looking back at the three mounds
+        // 4 ft behind home plate at cage center, looking back at both mounds
         walkCam.position.set(73, 5.6, cageZcenter);
         walkCam.lookAt(8, 4.5, cageZcenter);
       } else if (preset === 'entry') {
