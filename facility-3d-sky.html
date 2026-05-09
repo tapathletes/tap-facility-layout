@@ -956,8 +956,8 @@
     /* ─────────────────────────────────────────────────────────────────
        MOUNDS — at front of cage
        Each 9' × 4' × 10" tall. Long axis along x (toward back of cage).
-       Mound A: x=7..16, z=cageZ1+1..cageZ1+5  (~2.17..6.17)
-       Mound B: x=7..16, z=cageZ2-5..cageZ2-1  (~8.17..12.17)
+       Mound A: x=7..16, z=cageZ1+1..cageZ1+5      (~2.17..6.17)
+       Mound B: x=7..16, z=cageZ2-6.5..cageZ2-2.5  (~6.67..10.67) — shifted 1.5ft toward center
     ────────────────────────────────────────────────────────────────── */
     // Portable mound spec 2026-05-09: 9' × 4' × 10" tall.
     function mound(x1, x2, z1, z2) {
@@ -971,16 +971,16 @@
       rubber.position.set(x1 + 1.5, h + 0.04, (z1+z2)/2);
       scene.add(rubber);
     }
-    mound(7, 16, cageZ1+1, cageZ1+5);   // Mound A — 9' × 4', 1ft margin from wall-side net
-    mound(7, 16, cageZ2-5, cageZ2-1);   // Mound B — 9' × 4', 1ft margin from other net
+    mound(7, 16, cageZ1+1, cageZ1+5);     // Mound A — 9' × 4', 1ft margin from wall-side net
+    mound(7, 16, cageZ2-6.5, cageZ2-2.5); // Mound B — 9' × 4', shifted 1.5ft toward center for pitcher leg-extension room (2.5ft margin from gym-side net)
 
     /* ─────────────────────────────────────────────────────────────────
        HOME PLATES — one per mound, each at x=69 lined up with its mound.
        Plate moved from x=73 to x=69 (2026-05-09) to give an 8 ft catcher's
        box behind the plate (x=69 to back net at x=77). This also lands
        rubber-to-plate at regulation 60'-6" (rubber x=8.5 → plate x=69).
-         Plate A at z=cageZ1+3  (lined up with Mound A, z=cageZ1+1..cageZ1+5)
-         Plate B at z=cageZ2-3  (lined up with Mound B, z=cageZ2-5..cageZ2-1)
+         Plate A at z=cageZ1+3    (lined up with Mound A, z=cageZ1+1..cageZ1+5)
+         Plate B at z=cageZ2-4.5  (lined up with Mound B, z=cageZ2-6.5..cageZ2-2.5)
        Pentagon shape, point facing -x (toward the pitcher).
     ────────────────────────────────────────────────────────────────── */
     {
@@ -997,7 +997,7 @@
       });
       const bullseyeMat = new THREE.MeshBasicMaterial({ color: 0xb8d4e0, side: THREE.DoubleSide });
 
-      [cageZ1+3, cageZ2-3].forEach(z => {
+      [cageZ1+3, cageZ2-4.5].forEach(z => {
         // home plate
         const plate = new THREE.Mesh(plateGeom, plateMat);
         plate.rotation.x = -Math.PI / 2;
