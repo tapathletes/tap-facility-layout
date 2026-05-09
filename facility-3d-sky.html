@@ -1130,14 +1130,15 @@
     {
       // Real-time reflective mirror — renders the scene from a mirrored camera
       // each frame and projects it onto the surface. Reflects the gym in front.
+      // textureWidth/Height match the viewport for a sharp, undimmed reflection.
       const mirror = new Reflector(new THREE.PlaneGeometry(30, 10), {
         clipBias: 0.003,
-        textureWidth:  1024,
-        textureHeight: 1024,
-        color: 0xc8dde8, // PAL.mirror tint applied to the reflection
+        textureWidth:  Math.round(window.innerWidth  * window.devicePixelRatio),
+        textureHeight: Math.round(window.innerHeight * window.devicePixelRatio),
+        color: 0xffffff, // no tint — let the reflected scene's own colors come through
       });
-      mirror.position.set(25, 5, 24.85);
-      mirror.rotation.y = Math.PI; // face -z (into the building)
+      mirror.position.set(25, 5, 24.5); // slightly forward of the wall so the reflection plane sits clearly in the gym
+      mirror.rotation.y = Math.PI;      // face -z (into the building)
       scene.add(mirror);
 
       const frame = new THREE.Mesh(
