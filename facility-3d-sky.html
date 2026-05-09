@@ -217,7 +217,7 @@
          - 2' walking strip in front of cage (x = 3..5)
          - back of cage flush with back concrete pad
        Right-side strip: z = 14..25 (11' wide)
-         - bathroom 5×5 at x = 3..8, z = 20..25
+         - bathroom 6'-11 1/2" × 8'-8 1/2" (architect 2026-05-09) at x = 3..9.96, z = 16.29..25
          - mirror wall along z = 24.7, x = 10..40
          - plyo rack at x = 42..50, z = 22..24.5
          - kettlebell rack at x = 52..60, z = 22..24.5
@@ -995,7 +995,11 @@
        Right wall (z=25) shared with building wall. Door on z=20 face.
     ────────────────────────────────────────────────────────────────── */
     {
-      const bx1 = 3, bx2 = 8, bz1 = 20, bz2 = 25, bh = 9;
+      // Bathroom interior per architect spec 2026-05-09: 8'-8 1/2" × 6'-11 1/2".
+      // Long side (8'-8.5") runs along z; short side (6'-11.5") along x to clear mirror at x=10.
+      const bx1 = 3, bx2 = bx1 + 6 + 11.5/12;
+      const bz2 = 25, bz1 = bz2 - (8 + 8.5/12);
+      const bh = 9;
       // front bath wall (x=3), facing -x toward entry pad
       scene.add(mkBath(0.2, bh, bz2-bz1, bx1, bh/2, (bz1+bz2)/2));
       // back bath wall (x=8), facing +x into interior
