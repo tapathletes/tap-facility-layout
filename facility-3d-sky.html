@@ -166,6 +166,8 @@
     <button data-preset="mound">From Mound</button>
     <button data-preset="plate">From Plate</button>
     <button data-preset="entry">Entry</button>
+    <div class="divider"></div>
+    <button id="bay-door-toggle">Bay Door</button>
   </div>
 
   <div class="hud top-left">
@@ -423,10 +425,12 @@
     // Long walls (running along x)
     scene.add(wall(80 + WALL_T*2, WALL_H, WALL_T, 40, WALL_H/2, -WALL_T/2));      // left long wall (z=0)
     scene.add(wall(80 + WALL_T*2, WALL_H, WALL_T, 40, WALL_H/2, 25 + WALL_T/2));  // right long wall (z=25)
-    // Back short wall (x=80) — with roller door cutout
-    //   door is 6' wide × 8' tall, offset right-of-center:
-    //     looking at the back wall from inside, 4' of wall on the right (z=21..25),
-    //     then 6' door (z=15..21), then 15' of wall on the left (z=0..15)
+    // Bay door state — outer scope so the click handler + animate loop can reach it
+    let bayDoorGroup, bayDoorRollH;
+    let bayDoorOpen = false;
+    let bayDoorState = 1; // 1 = fully closed, 0 = fully open (lerps toward target)
+
+    // Back short wall (x=80) — with garage roll-up + pedestrian back door
     {
       // Garage roll-up door (centered on the back wall, 2026-05-09)
       const ROLL_W = 10, ROLL_H = 8;
@@ -449,29 +453,40 @@
       // Lintel above pedestrian door (y = 7..14)
       scene.add(wall(WALL_T, WALL_H - PED_H, PED_W, 80 + WALL_T/2, PED_H + (WALL_H - PED_H)/2, (PED_Z1 + PED_Z2)/2));
 
+      // Bay door is wrapped in a Group so it can animate (roll up) as a unit.
+      // Group origin = world (80, ROLL_H/2, garage_center_z); children positions
+      // are relative to that origin so scaling the group along y compresses the
+      // door panel toward the top of the opening (lintel).
+      bayDoorGroup = new THREE.Group();
+      bayDoorGroup.position.set(80, ROLL_H/2, (ROLL_Z1 + ROLL_Z2)/2);
+      scene.add(bayDoorGroup);
+
       // roller door slab (sectional panel)
       const doorMat = new THREE.MeshStandardMaterial({ color: 0x3a4a55, roughness: 0.55, metalness: 0.3 });
       const door = new THREE.Mesh(new THREE.BoxGeometry(0.15, ROLL_H, ROLL_W), doorMat);
-      door.position.set(80, ROLL_H/2, (ROLL_Z1 + ROLL_Z2)/2);
+      door.position.set(0, 0, 0); // centered in group
       door.castShadow = true;
-      scene.add(door);
+      bayDoorGroup.add(door);
 
-      // section grooves (every 2 ft of height)
+      // section grooves (every 2 ft of height) — relative to group center
       const grooveMat = new THREE.MeshStandardMaterial({ color: 0x1a232b, roughness: 0.8 });
       for (let yy = 2; yy < ROLL_H; yy += 2) {
         const groove = new THREE.Mesh(
           new THREE.BoxGeometry(0.18, 0.05, ROLL_W),
           grooveMat
         );
-        groove.position.set(80, yy, (ROLL_Z1 + ROLL_Z2)/2);
-        scene.add(groove);
+        groove.position.set(0, yy - ROLL_H/2, 0);
+        bayDoorGroup.add(groove);
       }
 
-      // vertical handle / lift bar (interior side)
+      // vertical handle / lift bar (interior side) — relative to group
       const handleMat = new THREE.MeshStandardMaterial({ color: 0xb8d4e0, roughness: 0.4, metalness: 0.6 });
       const handle = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.2, 0.15), handleMat);
-      handle.position.set(79.85, 3.5, (ROLL_Z1 + ROLL_Z2)/2);
-      scene.add(handle);
+      handle.position.set(-0.15, 3.5 - ROLL_H/2, 0);
+      bayDoorGroup.add(handle);
+
+      // expose ROLL_H so the animate loop can compute open/closed positions
+      bayDoorRollH = ROLL_H;
 
       // door tracks — vertical rails inside, on each side of the opening, up past the lintel
       const trackMat = new THREE.MeshStandardMaterial({ color: 0x3a4a55, roughness: 0.5, metalness: 0.6 });
@@ -1465,6 +1480,13 @@
       });
     });
 
+    // Bay door toggle
+    const bayDoorBtn = document.getElementById('bay-door-toggle');
+    bayDoorBtn.addEventListener('click', () => {
+      bayDoorOpen = !bayDoorOpen;
+      bayDoorBtn.classList.toggle('active', bayDoorOpen);
+    });
+
     const clock = new THREE.Clock();
     function updateWalk(dt) {
       if (!walk.isLocked) return;
@@ -1499,6 +1521,17 @@
       const dt = Math.min(clock.getDelta(), 0.05);
       if (mode === 'walk') updateWalk(dt);
       else orbit.update();
+
+      // Bay door roll-up animation: scale.y compresses the panel toward the
+      // top of the opening; position.y shifts so the top stays pinned at ROLL_H.
+      if (bayDoorGroup) {
+        const target = bayDoorOpen ? 0 : 1;
+        bayDoorState += (target - bayDoorState) * 0.08;
+        const s = Math.max(bayDoorState, 0.01);
+        bayDoorGroup.scale.y = s;
+        bayDoorGroup.position.y = (2 - s) * bayDoorRollH / 2;
+      }
+
       renderer.render(scene, activeCam);
       requestAnimationFrame(animate);
     }
