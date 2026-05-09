@@ -616,54 +616,6 @@
         scene.add(s);
       });
 
-      // Cars in 3 of the spots (simple body + cabin + windows + 4 wheels)
-      const cars = [
-        { color: 0x4a5a6a, z:  1.5, faceFwd: true },
-        { color: 0xd4d2cd, z: 19.5, faceFwd: true },
-        { color: 0x222428, z: 37.5, faceFwd: true },
-      ];
-      cars.forEach(c => {
-        const cx = -14;
-        const bodyMat = new THREE.MeshStandardMaterial({ color: c.color, roughness: 0.45, metalness: 0.35 });
-        const body = new THREE.Mesh(new THREE.BoxGeometry(15, 4.2, 6), bodyMat);
-        body.position.set(cx, 2.1, c.z);
-        body.castShadow = true;
-        scene.add(body);
-
-        const top = new THREE.Mesh(new THREE.BoxGeometry(8, 2.4, 5.6), bodyMat);
-        top.position.set(cx + 0.5, 5.4, c.z);
-        top.castShadow = true;
-        scene.add(top);
-
-        const winMat = new THREE.MeshStandardMaterial({
-          color: 0x1a232b, roughness: 0.15, metalness: 0.7,
-          transparent: true, opacity: 0.7,
-        });
-        const win = new THREE.Mesh(new THREE.BoxGeometry(7.6, 1.8, 5.7), winMat);
-        win.position.set(cx + 0.5, 5.5, c.z);
-        scene.add(win);
-
-        // wheels
-        const wheelGeom = new THREE.CylinderGeometry(1, 1, 0.6, 16);
-        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x141416, roughness: 0.85 });
-        [-5, 5].forEach(dx => {
-          [-2.9, 2.9].forEach(dz => {
-            const w = new THREE.Mesh(wheelGeom, wheelMat);
-            w.rotation.x = Math.PI / 2;
-            w.position.set(cx + dx, 1, c.z + dz);
-            scene.add(w);
-          });
-        });
-
-        // headlights (facing the building, +x direction)
-        const lampMat = new THREE.MeshBasicMaterial({ color: 0xfffbe0 });
-        [-2, 2].forEach(dz => {
-          const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.6, 1.2), lampMat);
-          lamp.position.set(cx + 7.4, 2.1, c.z + dz);
-          scene.add(lamp);
-        });
-      });
-
       // Tall light pole at edge of lot
       const poleMat = new THREE.MeshStandardMaterial({ color: 0x2a2d33, roughness: 0.6, metalness: 0.4 });
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 22, 12), poleMat);
@@ -863,12 +815,37 @@
     }
 
     /* ─────────────────────────────────────────────────────────────────
-       PITCHING CAGE — 12' × 72' × 11' (x=5..77, z=2..14, h=11)
+       PITCHING CAGE — 12' × 72' × 11' (x=5..77, h=11)
+       Cage is offset off the LEFT long wall (z=0) by:
+         - 1-3/8" wall padding (z=0..0.115)
+         - 1' clearance gap (z=0.115..1.115)
+       Cage left net therefore begins at z=1.115; right net at z=13.115.
+       cageZcenter is 7.115 — used by mounds/plates/markers/presets so a
+       future shift only requires changing WALL_PAD_T or NET_CLEAR.
     ────────────────────────────────────────────────────────────────── */
 
     const cageX1 = 5, cageX2 = 77;
-    const cageZ1 = 2, cageZ2 = 14;
+    const WALL_PAD_T = 1.375 / 12;            // 1-3/8" wall padding
+    const NET_CLEAR  = 1;                      // 1' clearance, padding face → net
+    const cageZ1     = WALL_PAD_T + NET_CLEAR; // 1.115
+    const cageZ2     = cageZ1 + 12;            // 13.115
+    const cageZcenter = (cageZ1 + cageZ2) / 2; // 7.115
     const cageH = 11;
+
+    // Wall padding on the LEFT long wall (z=0), spanning the cage length
+    // (x = cageX1..cageX2) at cage height. Sits flush against the wall's
+    // interior face; its outer face is the surface that ball traffic sees.
+    {
+      const padLen = cageX2 - cageX1;
+      const padMat = new THREE.MeshStandardMaterial({ color: 0x2a2724, roughness: 0.95 });
+      const pad = new THREE.Mesh(
+        new THREE.BoxGeometry(padLen, cageH, WALL_PAD_T),
+        padMat
+      );
+      pad.position.set((cageX1 + cageX2) / 2, cageH / 2, WALL_PAD_T / 2);
+      pad.receiveShadow = true;
+      scene.add(pad);
+    }
 
     // Turf base
     {
@@ -919,8 +896,8 @@
 
         // labels — one per lane, painted on the turf so a pitcher reads them
         // correctly when looking +x toward home plate. Three lanes match
-        // the three-mound layout (z = 5.5, 8, 10.5).
-        [5.5, 8, 10.5].forEach(zCenter => {
+        // the three-mound layout (centered at cageZcenter, 2.5 ft spacing).
+        [cageZcenter - 2.5, cageZcenter, cageZcenter + 2.5].forEach(zCenter => {
           const labelMat = new THREE.MeshBasicMaterial({
             map: makeDistanceLabel(d.label),
             transparent: true,
@@ -1003,12 +980,11 @@
       scene.add(rubber);
     }
     {
-      const mLen = 6 + 4/12;          // 6'4"
-      const mWid = 2.5;                // 2'6"
-      const mx1 = 7, mx2 = mx1 + mLen; // x = 7..13.333
-      const blockCenterZ = 8;          // cage centerline (z=2..14)
-      const blockHalf = (3 * mWid) / 2; // 3.75
-      const z0 = blockCenterZ - blockHalf; // 4.25
+      const mLen = 6 + 4/12;            // 6'4"
+      const mWid = 2.5;                  // 2'6"
+      const mx1 = 7, mx2 = mx1 + mLen;   // x = 7..13.333
+      const blockHalf = (3 * mWid) / 2;  // 3.75
+      const z0 = cageZcenter - blockHalf;
       for (let i = 0; i < 3; i++) {
         const z1 = z0 + i * mWid;
         const z2 = z1 + mWid;
@@ -1040,7 +1016,7 @@
       });
       const bullseyeMat = new THREE.MeshBasicMaterial({ color: 0xb8d4e0, side: THREE.DoubleSide });
 
-      [5.5, 8, 10.5].forEach(z => {
+      [cageZcenter - 2.5, cageZcenter, cageZcenter + 2.5].forEach(z => {
         const plate = new THREE.Mesh(geom, plateMat);
         plate.rotation.x = -Math.PI / 2;
         plate.position.set(69, 0.07, z);
@@ -1325,13 +1301,13 @@
       } else if (preset === 'mound') {
         setMode('walk');
         // on the center mound rubber (x=8.5), looking at center plate (x=69)
-        walkCam.position.set(9, 5.6, 8);
-        walkCam.lookAt(69, 4.5, 8);
+        walkCam.position.set(9, 5.6, cageZcenter);
+        walkCam.lookAt(69, 4.5, cageZcenter);
       } else if (preset === 'plate') {
         setMode('walk');
         // 4 ft behind center home plate, looking back at the three mounds
-        walkCam.position.set(73, 5.6, 8);
-        walkCam.lookAt(8, 4.5, 8);
+        walkCam.position.set(73, 5.6, cageZcenter);
+        walkCam.lookAt(8, 4.5, cageZcenter);
       } else if (preset === 'entry') {
         setMode('walk');
         walkCam.position.set(1.5, 5.6, 15.5);
