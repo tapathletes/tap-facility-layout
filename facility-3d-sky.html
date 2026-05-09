@@ -222,6 +222,7 @@
          - mirror wall along z = 24.7, x = 10..40
          - plyo rack at x = 42..50, z = 22..24.5
          - kettlebell rack at x = 52..60, z = 22..24.5
+         - weight rack at x = 65..70.15, z = 15..18.45 (squat rack, 6.73' tall)
        Door: on front wall (x = 0), span z = 7.375..10.375 (per architect: 7'-4 1/2" from z=0 edge)
     ────────────────────────────────────────────────────────────────── */
 
@@ -1256,6 +1257,91 @@
         handle.rotation.x = Math.PI / 2;
         scene.add(handle);
       });
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
+       WEIGHT RACK / SQUAT RACK — back end of gym strip
+       Spec 2026-05-09: 41.34" × 61.81" × 80.71"  (3.45 × 5.15 × 6.73 ft)
+       x=65..70.15 (5.15' wide, along bar), z=15..18.45 (3.45' deep), h=6.73'
+       User faces +z toward the mirror; rack uprights frame the squat zone.
+    ────────────────────────────────────────────────────────────────── */
+    {
+      const wrx1 = 65, wrx2 = wrx1 + 5.15;
+      const wrz1 = 15, wrz2 = wrz1 + 3.45;
+      const wrh  = 6.73;
+      const postT = 0.25;
+
+      const rackMat = new THREE.MeshStandardMaterial({
+        color: 0x1a232b, roughness: 0.6, metalness: 0.5,
+      });
+      const accentMat = new THREE.MeshStandardMaterial({
+        color: 0xc23a2e, roughness: 0.5, metalness: 0.4,
+      });
+      const barMat = new THREE.MeshStandardMaterial({
+        color: 0x8a8a8a, roughness: 0.35, metalness: 0.75,
+      });
+
+      // 4 vertical posts at corners
+      const postGeom = new THREE.BoxGeometry(postT, wrh, postT);
+      [[wrx1, wrz1], [wrx2, wrz1], [wrx1, wrz2], [wrx2, wrz2]].forEach(([x, z]) => {
+        const post = new THREE.Mesh(postGeom, rackMat);
+        post.position.set(x, wrh / 2, z);
+        post.castShadow = true;
+        scene.add(post);
+      });
+
+      // Top cross-bars along x (front and back of the rack)
+      const topXGeom = new THREE.BoxGeometry(wrx2 - wrx1, postT, postT);
+      [wrz1, wrz2].forEach(z => {
+        const tb = new THREE.Mesh(topXGeom, rackMat);
+        tb.position.set((wrx1 + wrx2) / 2, wrh - postT / 2, z);
+        scene.add(tb);
+      });
+      // Top cross-bars along z (left and right) — also serves as pull-up bar
+      const topZGeom = new THREE.BoxGeometry(postT, postT, wrz2 - wrz1);
+      [wrx1, wrx2].forEach(x => {
+        const sb = new THREE.Mesh(topZGeom, rackMat);
+        sb.position.set(x, wrh - postT / 2, (wrz1 + wrz2) / 2);
+        scene.add(sb);
+      });
+
+      // J-hooks at chest height (~y=4.2)
+      const hookY = 4.2;
+      const hookGeom = new THREE.BoxGeometry(0.45, 0.28, postT * 1.6);
+      [wrx1, wrx2].forEach(x => {
+        const hook = new THREE.Mesh(hookGeom, accentMat);
+        hook.position.set(x, hookY, wrz1 - 0.18);
+        scene.add(hook);
+      });
+
+      // Safety arms at squat depth (~y=2.8) — racked outward
+      const safetyY = 2.8;
+      const safetyGeom = new THREE.BoxGeometry(0.4, 0.18, postT * 1.4);
+      [wrx1, wrx2].forEach(x => {
+        const safety = new THREE.Mesh(safetyGeom, accentMat);
+        safety.position.set(x, safetyY, wrz1 - 0.15);
+        scene.add(safety);
+      });
+
+      // Olympic bar resting on j-hooks (7 ft, slight overhang)
+      const barLen = 7;
+      const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, barLen, 12), barMat);
+      bar.rotation.z = Math.PI / 2;
+      bar.position.set((wrx1 + wrx2) / 2, hookY + 0.08, wrz1 - 0.18);
+      bar.castShadow = true;
+      scene.add(bar);
+
+      // Plates loaded near each end (just outside the posts)
+      const plateMat = new THREE.MeshStandardMaterial({ color: 0xc23a2e, roughness: 0.5 });
+      const plateGeom = new THREE.CylinderGeometry(0.55, 0.55, 0.18, 18);
+      const halfRack = (wrx2 - wrx1) / 2;
+      for (const dx of [-halfRack - 0.25, halfRack + 0.25]) {
+        const plate = new THREE.Mesh(plateGeom, plateMat);
+        plate.rotation.z = Math.PI / 2;
+        plate.position.set((wrx1 + wrx2) / 2 + dx, hookY + 0.08, wrz1 - 0.18);
+        plate.castShadow = true;
+        scene.add(plate);
+      }
     }
 
     /* ─────────────────────────────────────────────────────────────────
