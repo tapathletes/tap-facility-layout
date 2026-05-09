@@ -222,7 +222,7 @@
          - mirror wall along z = 24.7, x = 10..40
          - plyo rack at x = 42..50, z = 22..24.5
          - kettlebell rack at x = 52..60, z = 22..24.5
-         - weight rack at x = 65..70.15, z = 15..18.45 (squat rack, 6.73' tall)
+         - weight rack at x = 64..69.15, z = 20.95..24.4 (2-post quarter rack against z=25 wall, blue, 6.73' tall)
        Door: on front wall (x = 0), span z = 7.375..10.375 (per architect: 7'-4 1/2" from z=0 edge)
     ────────────────────────────────────────────────────────────────── */
 
@@ -1260,19 +1260,22 @@
     }
 
     /* ─────────────────────────────────────────────────────────────────
-       WEIGHT RACK / SQUAT RACK — back end of gym strip
+       WEIGHT RACK / 2-POST QUARTER RACK — against the mirror-side wall
        Spec 2026-05-09: 41.34" × 61.81" × 80.71"  (3.45 × 5.15 × 6.73 ft)
-       x=65..70.15 (5.15' wide, along bar), z=15..18.45 (3.45' deep), h=6.73'
-       User faces +z toward the mirror; rack uprights frame the squat zone.
+       Posts span x=64..69.15 (5.15' apart) at z=24.4 (against z=25 wall).
+       Stabilizer feet extend forward to z=20.95 (3.45' deep footprint).
+       Metal is blue so the rack reads against the dark turf.
     ────────────────────────────────────────────────────────────────── */
     {
-      const wrx1 = 65, wrx2 = wrx1 + 5.15;
-      const wrz1 = 15, wrz2 = wrz1 + 3.45;
+      const wrx1 = 64, wrx2 = wrx1 + 5.15;     // post separation along x
+      const wrzBack = 24.4;                      // post z (against the wall)
+      const wrzFront = wrzBack - 3.45;           // forward edge of base feet
       const wrh  = 6.73;
-      const postT = 0.25;
+      const postT = 0.28;
 
+      // Blue rack metal (visible against the dark turf)
       const rackMat = new THREE.MeshStandardMaterial({
-        color: 0x1a232b, roughness: 0.6, metalness: 0.5,
+        color: 0x2563eb, roughness: 0.45, metalness: 0.65,
       });
       const accentMat = new THREE.MeshStandardMaterial({
         color: 0xc23a2e, roughness: 0.5, metalness: 0.4,
@@ -1281,53 +1284,62 @@
         color: 0x8a8a8a, roughness: 0.35, metalness: 0.75,
       });
 
-      // 4 vertical posts at corners
+      // 2 vertical posts at the wall side
       const postGeom = new THREE.BoxGeometry(postT, wrh, postT);
-      [[wrx1, wrz1], [wrx2, wrz1], [wrx1, wrz2], [wrx2, wrz2]].forEach(([x, z]) => {
+      [wrx1, wrx2].forEach(x => {
         const post = new THREE.Mesh(postGeom, rackMat);
-        post.position.set(x, wrh / 2, z);
+        post.position.set(x, wrh / 2, wrzBack);
         post.castShadow = true;
         scene.add(post);
       });
 
-      // Top cross-bars along x (front and back of the rack)
-      const topXGeom = new THREE.BoxGeometry(wrx2 - wrx1, postT, postT);
-      [wrz1, wrz2].forEach(z => {
-        const tb = new THREE.Mesh(topXGeom, rackMat);
-        tb.position.set((wrx1 + wrx2) / 2, wrh - postT / 2, z);
-        scene.add(tb);
-      });
-      // Top cross-bars along z (left and right) — also serves as pull-up bar
-      const topZGeom = new THREE.BoxGeometry(postT, postT, wrz2 - wrz1);
+      // Top stabilizer cross-bar between the 2 posts
+      const topGeom = new THREE.BoxGeometry(wrx2 - wrx1, postT, postT);
+      const topBar = new THREE.Mesh(topGeom, rackMat);
+      topBar.position.set((wrx1 + wrx2) / 2, wrh - postT / 2, wrzBack);
+      scene.add(topBar);
+
+      // Stabilizer feet — flat horizontal base extending forward from each post
+      const footGeom = new THREE.BoxGeometry(postT, 0.18, wrzBack - wrzFront);
       [wrx1, wrx2].forEach(x => {
-        const sb = new THREE.Mesh(topZGeom, rackMat);
-        sb.position.set(x, wrh - postT / 2, (wrz1 + wrz2) / 2);
-        scene.add(sb);
+        const foot = new THREE.Mesh(footGeom, rackMat);
+        foot.position.set(x, 0.09, (wrzBack + wrzFront) / 2);
+        foot.castShadow = true;
+        scene.add(foot);
       });
 
-      // J-hooks at chest height (~y=4.2)
+      // Cross-tie connecting the front of the two feet (visual stability)
+      const tieGeom = new THREE.BoxGeometry(wrx2 - wrx1, 0.18, postT);
+      const tie = new THREE.Mesh(tieGeom, rackMat);
+      tie.position.set((wrx1 + wrx2) / 2, 0.09, wrzFront + postT / 2);
+      scene.add(tie);
+
+      // J-hooks at chest height (~y=4.2), sticking forward (-z) off the posts
       const hookY = 4.2;
-      const hookGeom = new THREE.BoxGeometry(0.45, 0.28, postT * 1.6);
+      const hookDepth = 0.4;
+      const hookGeom = new THREE.BoxGeometry(0.45, 0.28, hookDepth);
       [wrx1, wrx2].forEach(x => {
         const hook = new THREE.Mesh(hookGeom, accentMat);
-        hook.position.set(x, hookY, wrz1 - 0.18);
+        hook.position.set(x, hookY, wrzBack - hookDepth / 2 - postT / 2);
         scene.add(hook);
       });
 
-      // Safety arms at squat depth (~y=2.8) — racked outward
+      // Safety arms at squat depth (~y=2.8), shorter than j-hooks
       const safetyY = 2.8;
-      const safetyGeom = new THREE.BoxGeometry(0.4, 0.18, postT * 1.4);
+      const safetyDepth = 0.32;
+      const safetyGeom = new THREE.BoxGeometry(0.38, 0.18, safetyDepth);
       [wrx1, wrx2].forEach(x => {
         const safety = new THREE.Mesh(safetyGeom, accentMat);
-        safety.position.set(x, safetyY, wrz1 - 0.15);
+        safety.position.set(x, safetyY, wrzBack - safetyDepth / 2 - postT / 2);
         scene.add(safety);
       });
 
-      // Olympic bar resting on j-hooks (7 ft, slight overhang)
+      // Olympic bar resting on j-hooks (7 ft, ~1 ft overhang each side)
       const barLen = 7;
+      const barZ = wrzBack - hookDepth - postT / 2;
       const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, barLen, 12), barMat);
       bar.rotation.z = Math.PI / 2;
-      bar.position.set((wrx1 + wrx2) / 2, hookY + 0.08, wrz1 - 0.18);
+      bar.position.set((wrx1 + wrx2) / 2, hookY + 0.08, barZ);
       bar.castShadow = true;
       scene.add(bar);
 
@@ -1338,7 +1350,7 @@
       for (const dx of [-halfRack - 0.25, halfRack + 0.25]) {
         const plate = new THREE.Mesh(plateGeom, plateMat);
         plate.rotation.z = Math.PI / 2;
-        plate.position.set((wrx1 + wrx2) / 2 + dx, hookY + 0.08, wrz1 - 0.18);
+        plate.position.set((wrx1 + wrx2) / 2 + dx, hookY + 0.08, barZ);
         plate.castShadow = true;
         scene.add(plate);
       }
