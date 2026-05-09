@@ -935,20 +935,20 @@
        Mound A: x=7..17, z=3..7
        Mound B: x=7..17, z=9..13
     ────────────────────────────────────────────────────────────────── */
+    // Portable mound spec 2026-05-09: 9' × 4' × 10" tall.
     function mound(x1, x2, z1, z2) {
-      const w = x2 - x1, d = z2 - z1, h = 0.8;
+      const w = x2 - x1, d = z2 - z1, h = 10/12; // 10 inches
       const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), matMoundTop);
       body.position.set((x1+x2)/2, h/2, (z1+z2)/2);
       body.castShadow = true;
       scene.add(body);
-      // pitching rubber on top, at the BACK of the mound (close to the front net at x=5).
-      // Pitcher stands on the rubber, then strides forward (+x) toward home plate.
+      // Pitching rubber on top, ~1.5 ft from the back. Pitcher strides forward (+x).
       const rubber = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 2), matRubber);
       rubber.position.set(x1 + 1.5, h + 0.04, (z1+z2)/2);
       scene.add(rubber);
     }
-    mound(7, 17, 3, 7);   // Mound A — aligned with home plate at z=5
-    mound(7, 17, 9, 13);  // Mound B — aligned with home plate at z=11
+    mound(7, 16, 3, 7);   // Mound A — 9' × 4', aligned with home plate at z=5
+    mound(7, 16, 9, 13);  // Mound B — 9' × 4', aligned with home plate at z=11
 
     /* ─────────────────────────────────────────────────────────────────
        HOME PLATES — one per mound, each at x=73 lined up with its mound
