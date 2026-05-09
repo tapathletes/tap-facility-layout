@@ -222,7 +222,7 @@
          - mirror wall along z = 24.7, x = 10..40
          - plyo rack at x = 42..50, z = 22..24.5
          - kettlebell rack at x = 52..60, z = 22..24.5
-       Door: on front wall (x = 0), span z = 14.625..17.625 (per architect: 7'-4 1/2" from z=25 edge)
+       Door: on front wall (x = 0), span z = 7.375..10.375 (per architect: 7'-4 1/2" from z=0 edge)
     ────────────────────────────────────────────────────────────────── */
 
     const PAL = {
@@ -427,14 +427,26 @@
     //     looking at the back wall from inside, 4' of wall on the right (z=21..25),
     //     then 6' door (z=15..21), then 15' of wall on the left (z=0..15)
     {
-      const ROLL_W = 6, ROLL_H = 8;
-      const ROLL_Z1 = 15, ROLL_Z2 = 21;
-      // left segment (z = 0..15)
+      // Garage roll-up door (per spec 2026-05-09)
+      const ROLL_W = 10, ROLL_H = 8;
+      const ROLL_Z1 = 2, ROLL_Z2 = ROLL_Z1 + ROLL_W;  // z=2..12
+
+      // Pedestrian back door (added 2026-05-09)
+      const PED_W = 3, PED_H = 7;
+      const PED_Z1 = 15, PED_Z2 = PED_Z1 + PED_W;     // z=15..18
+
+      // Wall segments around the two openings
+      // z=0..ROLL_Z1: left of garage
       scene.add(wall(WALL_T, WALL_H, ROLL_Z1, 80 + WALL_T/2, WALL_H/2, ROLL_Z1/2));
-      // right segment (z = 21..25)
-      scene.add(wall(WALL_T, WALL_H, 25 - ROLL_Z2, 80 + WALL_T/2, WALL_H/2, (ROLL_Z2 + 25)/2));
-      // lintel above the door (y = 8..14)
+      // z=ROLL_Z2..PED_Z1: between garage and pedestrian
+      scene.add(wall(WALL_T, WALL_H, PED_Z1 - ROLL_Z2, 80 + WALL_T/2, WALL_H/2, (ROLL_Z2 + PED_Z1)/2));
+      // z=PED_Z2..25: right of pedestrian
+      scene.add(wall(WALL_T, WALL_H, 25 - PED_Z2, 80 + WALL_T/2, WALL_H/2, (PED_Z2 + 25)/2));
+
+      // Lintel above garage (y = 8..14)
       scene.add(wall(WALL_T, WALL_H - ROLL_H, ROLL_W, 80 + WALL_T/2, ROLL_H + (WALL_H - ROLL_H)/2, (ROLL_Z1 + ROLL_Z2)/2));
+      // Lintel above pedestrian door (y = 7..14)
+      scene.add(wall(WALL_T, WALL_H - PED_H, PED_W, 80 + WALL_T/2, PED_H + (WALL_H - PED_H)/2, (PED_Z1 + PED_Z2)/2));
 
       // roller door slab (sectional panel)
       const doorMat = new THREE.MeshStandardMaterial({ color: 0x3a4a55, roughness: 0.55, metalness: 0.3 });
@@ -485,6 +497,17 @@
       const capR = capL.clone();
       capR.position.set(79.6, ROLL_H + 0.7, ROLL_Z2 + 0.2);
       scene.add(capL, capR);
+
+      // Pedestrian back door — simple slab
+      const pedDoor = new THREE.Mesh(new THREE.BoxGeometry(0.15, PED_H, PED_W), doorMat);
+      pedDoor.position.set(80, PED_H/2, (PED_Z1 + PED_Z2)/2);
+      pedDoor.castShadow = true;
+      scene.add(pedDoor);
+
+      // Pedestrian door knob/handle (interior side)
+      const pedHandle = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.4, 0.15), handleMat);
+      pedHandle.position.set(79.85, 3.3, PED_Z2 - 0.4);
+      scene.add(pedHandle);
     }
     // Front facade (x=0) — full glass curtain wall + glass door
     {
@@ -508,13 +531,13 @@
         m.rotation.y = -Math.PI / 2; // face -x (toward parking lot)
         return m;
       }
-      scene.add(pane(7.3125, 14.625, 7,    14)); // left pane (z=0..14.625)
-      scene.add(pane(16.125,  3,     10.5,  7)); // transom over door (z=14.625..17.625, y=7..14)
-      scene.add(pane(21.3125, 7.375, 7,    14)); // right pane (z=17.625..25)
+      scene.add(pane(3.6875, 7.375, 7,    14)); // left pane (z=0..7.375)
+      scene.add(pane(8.875,  3,     10.5,  7)); // transom over door (z=7.375..10.375, y=7..14)
+      scene.add(pane(17.6875, 14.625, 7,   14)); // right pane (z=10.375..25)
 
-      // Vertical mullions every 5 ft + at door jambs (jambs at 14.625 and 17.625 per architect spec)
+      // Vertical mullions every ~5 ft + at door jambs (jambs at 7.375 and 10.375 per architect spec)
       const vMullionGeom = new THREE.BoxGeometry(0.5, 14, 0.25);
-      [0, 5, 10, 14.625, 17.625, 21, 25].forEach(z => {
+      [0, 5, 7.375, 10.375, 15, 20, 25].forEach(z => {
         const m = new THREE.Mesh(vMullionGeom, matMullion);
         m.position.set(0, 7, z);
         scene.add(m);
@@ -529,9 +552,9 @@
       scene.add(hRail(7));   // door head / transom break
       scene.add(hRail(14));
 
-      // Glass door (hinged on z=14.625 side, swung inward to interior)
+      // Glass door (hinged on z=7.375 side, swung inward to interior)
       const doorPivot = new THREE.Group();
-      doorPivot.position.set(0, 0, 14.625);
+      doorPivot.position.set(0, 0, 7.375);
       doorPivot.rotation.y = -Math.PI / 8;
       scene.add(doorPivot);
 
@@ -820,13 +843,15 @@
     const lockupTex = makeLockupTexture();
 
     // Back wall — motivational quote (was TAP lockup).
-    // 11 × 2.75 ft fits within the 12 ft cage interior (0.5 ft margin each side).
+    // Positioned in the lintel above the garage door (garage z=2..12, lintel
+    // y=8..14). Visible from inside the cage looking back toward the back wall,
+    // above where the garage door sits.
     {
       const decal = new THREE.Mesh(
-        new THREE.PlaneGeometry(11, 2.75),
+        new THREE.PlaneGeometry(10, 2.5),
         new THREE.MeshBasicMaterial({ map: makeQuoteTexture(), transparent: true })
       );
-      decal.position.set(79.95, 7, 7.17); // centered on cage width (cageZ1+cageZ2)/2 — hardcoded because cage consts are declared later in the file
+      decal.position.set(79.95, 10.5, 7); // y=10.5 centered in lintel (y=8..14, slightly low for cage visibility), z=7 centered on garage
       decal.rotation.y = -Math.PI / 2;
       scene.add(decal);
     }
@@ -1235,11 +1260,11 @@
     }
 
     /* ─────────────────────────────────────────────────────────────────
-       WELCOME MAT — just inside the front door (x=4..6, z=14.625..17.625)
+       WELCOME MAT — just inside the front door (x=4..6, z=7.375..10.375)
     ────────────────────────────────────────────────────────────────── */
     {
       const mat = new THREE.Mesh(new THREE.BoxGeometry(2, 0.04, 3), matMat);
-      mat.position.set(5, 0.07, 16.125);
+      mat.position.set(5, 0.07, 8.875);
       scene.add(mat);
     }
 
