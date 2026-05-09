@@ -14,11 +14,12 @@ Active:
 - [`facility-3d-sky.html`](facility-3d-sky.html) — Three.js walkthrough,
   sky-blue turf.
 - [`facility-3d.html`](facility-3d.html) — Three.js walkthrough, black turf.
-- [`facility-layout-v2.html`](facility-layout-v2.html) — 2D isometric SVG
-  blueprint, architectural-sheet style.
 
 Archive:
 
+- [`facility-layout-v2.html`](facility-layout-v2.html) — 2D isometric SVG
+  blueprint. Hand-baked polygons; does not auto-update when 3D dimensions
+  change. Kept viewable but no longer maintained alongside the 3D variants.
 - [`facility-layout-v1.html`](facility-layout-v1.html) — earlier 2D layout
   (superseded by v2; kept for reference).
 
