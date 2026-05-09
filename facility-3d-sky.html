@@ -213,11 +213,11 @@
          z: 0 .. 25  (width, LEFT wall to RIGHT wall)
          y: 0 .. 14  (height, floor to ceiling)
        Concrete pads:  x = 0..3 (front entry) and x = 77..80 (back exit)
-       Pitching cage:  x = 5..77, z = 0..12, y = 0..11   (12' × 72' × 11', flush with z=0 wall)
+       Pitching cage:  x = 5..77, z = 1.17..13.17, y = 0..11   (12' × 72' × 11')
          - 2' walking strip in front of cage (x = 3..5)
          - back of cage flush with back concrete pad
-         - z=0 wall has foam wall padding running the full cage length (matsupplier-style)
-       Right-side strip: z = 12..25 (13' wide)
+         - z=0 wall: 2" foam wall padding, then 1 ft gap, then cage net
+       Right-side strip: z = 13.17..25 (~11.83' wide)
          - bathroom 6'-11 1/2" × 8'-8 1/2" (architect 2026-05-09) at x = 3..9.96, z = 16.29..25
          - mirror wall along z = 24.7, x = 10..40
          - plyo rack at x = 42..50, z = 22..24.5
@@ -817,11 +817,14 @@
     }
 
     /* ─────────────────────────────────────────────────────────────────
-       PITCHING CAGE — 12' × 72' × 11' (x=5..77, z=2..14, h=11)
+       PITCHING CAGE — 12' × 72' × 11' (x=5..77, z=1.17..13.17, h=11)
+       Cage net offset from z=0 wall by 2" pad thickness + 1 ft buffer.
     ────────────────────────────────────────────────────────────────── */
 
     const cageX1 = 5, cageX2 = 77;
-    const cageZ1 = 0, cageZ2 = 12;
+    const PAD_THK = 2/12, PAD_GAP = 1;
+    const cageZ1 = PAD_THK + PAD_GAP;     // ~1.17
+    const cageZ2 = cageZ1 + 12;           // ~13.17 (12 ft cage width)
     const cageH = 11;
 
     // Turf base
@@ -921,23 +924,23 @@
       m.position.set(x, y, z);
       return m;
     }
-    // Left side (z=cageZ1=0): cage flush with building wall — no net here.
-    // Foam wall padding (matsupplier-style, 2" thick, 6 ft tall) protects the
-    // wall along the full cage length.
+    // Left side (z=cageZ1): cage net at the wall-side boundary.
+    scene.add(netPanel(cageX2-cageX1, cageH, 0.05, (cageX1+cageX2)/2, cageH/2, cageZ1));
+    // Foam wall padding (matsupplier-style, 2" thick, 6 ft tall) flush with
+    // z=0 building wall. 1 ft gap between padding face and the cage net.
     {
-      const padThk = 2 / 12;
       const padH = 6;
       const padMat = new THREE.MeshStandardMaterial({
         color: 0x2a3a47, roughness: 0.85, metalness: 0.05,
       });
       const pad = new THREE.Mesh(
-        new THREE.BoxGeometry(cageX2-cageX1, padH, padThk),
+        new THREE.BoxGeometry(cageX2-cageX1, padH, PAD_THK),
         padMat
       );
       pad.position.set(
         (cageX1+cageX2)/2,    // centered along cage length
         padH/2,                // bottom flush with floor
-        cageZ1 + padThk/2      // sits just inside the building wall at z=0
+        PAD_THK/2              // sits flush with z=0 wall, sticking 2" inward
       );
       scene.add(pad);
     }
@@ -953,8 +956,8 @@
     /* ─────────────────────────────────────────────────────────────────
        MOUNDS — at front of cage
        Each 9' × 4' × 10" tall. Long axis along x (toward back of cage).
-       Mound A: x=7..16, z=1..5
-       Mound B: x=7..16, z=7..11
+       Mound A: x=7..16, z=cageZ1+1..cageZ1+5  (~2.17..6.17)
+       Mound B: x=7..16, z=cageZ2-5..cageZ2-1  (~8.17..12.17)
     ────────────────────────────────────────────────────────────────── */
     // Portable mound spec 2026-05-09: 9' × 4' × 10" tall.
     function mound(x1, x2, z1, z2) {
@@ -968,16 +971,16 @@
       rubber.position.set(x1 + 1.5, h + 0.04, (z1+z2)/2);
       scene.add(rubber);
     }
-    mound(7, 16, 1, 5);   // Mound A — 9' × 4', aligned with home plate at z=3
-    mound(7, 16, 7, 11);  // Mound B — 9' × 4', aligned with home plate at z=9
+    mound(7, 16, cageZ1+1, cageZ1+5);   // Mound A — 9' × 4', 1ft margin from wall-side net
+    mound(7, 16, cageZ2-5, cageZ2-1);   // Mound B — 9' × 4', 1ft margin from other net
 
     /* ─────────────────────────────────────────────────────────────────
        HOME PLATES — one per mound, each at x=69 lined up with its mound.
        Plate moved from x=73 to x=69 (2026-05-09) to give an 8 ft catcher's
        box behind the plate (x=69 to back net at x=77). This also lands
        rubber-to-plate at regulation 60'-6" (rubber x=8.5 → plate x=69).
-         Plate A at z=3 (lined up with Mound A, z=1..5)
-         Plate B at z=9 (lined up with Mound B, z=7..11)
+         Plate A at z=cageZ1+3  (lined up with Mound A, z=cageZ1+1..cageZ1+5)
+         Plate B at z=cageZ2-3  (lined up with Mound B, z=cageZ2-5..cageZ2-1)
        Pentagon shape, point facing -x (toward the pitcher).
     ────────────────────────────────────────────────────────────────── */
     {
@@ -994,7 +997,7 @@
       });
       const bullseyeMat = new THREE.MeshBasicMaterial({ color: 0xb8d4e0, side: THREE.DoubleSide });
 
-      [3, 9].forEach(z => {
+      [cageZ1+3, cageZ2-3].forEach(z => {
         // home plate
         const plate = new THREE.Mesh(plateGeom, plateMat);
         plate.rotation.x = -Math.PI / 2;
