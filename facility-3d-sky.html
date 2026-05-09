@@ -213,10 +213,11 @@
          z: 0 .. 25  (width, LEFT wall to RIGHT wall)
          y: 0 .. 14  (height, floor to ceiling)
        Concrete pads:  x = 0..3 (front entry) and x = 77..80 (back exit)
-       Pitching cage:  x = 5..77, z = 2..14, y = 0..11   (12' × 72' × 11')
+       Pitching cage:  x = 5..77, z = 0..12, y = 0..11   (12' × 72' × 11', flush with z=0 wall)
          - 2' walking strip in front of cage (x = 3..5)
          - back of cage flush with back concrete pad
-       Right-side strip: z = 14..25 (11' wide)
+         - z=0 wall has foam wall padding running the full cage length (matsupplier-style)
+       Right-side strip: z = 12..25 (13' wide)
          - bathroom 6'-11 1/2" × 8'-8 1/2" (architect 2026-05-09) at x = 3..9.96, z = 16.29..25
          - mirror wall along z = 24.7, x = 10..40
          - plyo rack at x = 42..50, z = 22..24.5
@@ -820,7 +821,7 @@
     ────────────────────────────────────────────────────────────────── */
 
     const cageX1 = 5, cageX2 = 77;
-    const cageZ1 = 2, cageZ2 = 14;
+    const cageZ1 = 0, cageZ2 = 12;
     const cageH = 11;
 
     // Turf base
@@ -920,8 +921,26 @@
       m.position.set(x, y, z);
       return m;
     }
-    // Left (z=cageZ1): runs along x, thin in z
-    scene.add(netPanel(cageX2-cageX1, cageH, 0.05, (cageX1+cageX2)/2, cageH/2, cageZ1));
+    // Left side (z=cageZ1=0): cage flush with building wall — no net here.
+    // Foam wall padding (matsupplier-style, 2" thick, 6 ft tall) protects the
+    // wall along the full cage length.
+    {
+      const padThk = 2 / 12;
+      const padH = 6;
+      const padMat = new THREE.MeshStandardMaterial({
+        color: 0x2a3a47, roughness: 0.85, metalness: 0.05,
+      });
+      const pad = new THREE.Mesh(
+        new THREE.BoxGeometry(cageX2-cageX1, padH, padThk),
+        padMat
+      );
+      pad.position.set(
+        (cageX1+cageX2)/2,    // centered along cage length
+        padH/2,                // bottom flush with floor
+        cageZ1 + padThk/2      // sits just inside the building wall at z=0
+      );
+      scene.add(pad);
+    }
     // Right (z=cageZ2)
     scene.add(netPanel(cageX2-cageX1, cageH, 0.05, (cageX1+cageX2)/2, cageH/2, cageZ2));
     // Front net (x=cageX1): runs along z, thin in x
@@ -933,9 +952,9 @@
 
     /* ─────────────────────────────────────────────────────────────────
        MOUNDS — at front of cage
-       Each 4' × 10', 0.8' tall. Long axis along x (toward back of cage).
-       Mound A: x=7..17, z=3..7
-       Mound B: x=7..17, z=9..13
+       Each 9' × 4' × 10" tall. Long axis along x (toward back of cage).
+       Mound A: x=7..16, z=1..5
+       Mound B: x=7..16, z=7..11
     ────────────────────────────────────────────────────────────────── */
     // Portable mound spec 2026-05-09: 9' × 4' × 10" tall.
     function mound(x1, x2, z1, z2) {
@@ -949,16 +968,16 @@
       rubber.position.set(x1 + 1.5, h + 0.04, (z1+z2)/2);
       scene.add(rubber);
     }
-    mound(7, 16, 3, 7);   // Mound A — 9' × 4', aligned with home plate at z=5
-    mound(7, 16, 9, 13);  // Mound B — 9' × 4', aligned with home plate at z=11
+    mound(7, 16, 1, 5);   // Mound A — 9' × 4', aligned with home plate at z=3
+    mound(7, 16, 7, 11);  // Mound B — 9' × 4', aligned with home plate at z=9
 
     /* ─────────────────────────────────────────────────────────────────
        HOME PLATES — one per mound, each at x=69 lined up with its mound.
        Plate moved from x=73 to x=69 (2026-05-09) to give an 8 ft catcher's
        box behind the plate (x=69 to back net at x=77). This also lands
        rubber-to-plate at regulation 60'-6" (rubber x=8.5 → plate x=69).
-         Plate A at z=5  (lined up with Mound A, z=3..7)
-         Plate B at z=11 (lined up with Mound B, z=9..13)
+         Plate A at z=3 (lined up with Mound A, z=1..5)
+         Plate B at z=9 (lined up with Mound B, z=7..11)
        Pentagon shape, point facing -x (toward the pitcher).
     ────────────────────────────────────────────────────────────────── */
     {
@@ -975,7 +994,7 @@
       });
       const bullseyeMat = new THREE.MeshBasicMaterial({ color: 0xb8d4e0, side: THREE.DoubleSide });
 
-      [5, 11].forEach(z => {
+      [3, 9].forEach(z => {
         // home plate
         const plate = new THREE.Mesh(plateGeom, plateMat);
         plate.rotation.x = -Math.PI / 2;
