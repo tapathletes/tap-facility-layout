@@ -831,10 +831,12 @@
       scene.add(m);
     }
     /* Distance markers across the turf — perpendicular to the lane direction.
-       Distance is measured from the BACK POINT of home plate (world x ≈ 72.15)
-       backward to where the FRONT EDGE OF THE PITCHING RUBBER would sit. */
+       Distance is measured from the BACK POINT of home plate (world x ≈ 68.15)
+       backward to where the FRONT EDGE OF THE PITCHING RUBBER would sit.
+       Plate moved from x=73 → x=69 on 2026-05-09, so back point: 73-0.85=72.15
+       became 69-0.85=68.15. */
     {
-      const platePointX = 72.15;
+      const platePointX = 68.15;
       const distances = [
         { ft: 40,   label: "40'"    },
         { ft: 46,   label: "46'"    },
@@ -951,7 +953,10 @@
     mound(7, 16, 9, 13);  // Mound B — 9' × 4', aligned with home plate at z=11
 
     /* ─────────────────────────────────────────────────────────────────
-       HOME PLATES — one per mound, each at x=73 lined up with its mound
+       HOME PLATES — one per mound, each at x=69 lined up with its mound.
+       Plate moved from x=73 to x=69 (2026-05-09) to give an 8 ft catcher's
+       box behind the plate (x=69 to back net at x=77). This also lands
+       rubber-to-plate at regulation 60'-6" (rubber x=8.5 → plate x=69).
          Plate A at z=5  (lined up with Mound A, z=3..7)
          Plate B at z=11 (lined up with Mound B, z=9..13)
        Pentagon shape, point facing -x (toward the pitcher).
@@ -974,7 +979,7 @@
         // home plate
         const plate = new THREE.Mesh(plateGeom, plateMat);
         plate.rotation.x = -Math.PI / 2;
-        plate.position.set(73, 0.07, z);
+        plate.position.set(69, 0.07, z);
         scene.add(plate);
 
         // strike-zone target on back net (x=77), centered above the plate
