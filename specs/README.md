@@ -10,11 +10,14 @@ procedural Three.js geometry, the geometry is wrong, not the spec.
 
 ## Naming convention
 
-`<area>-<YYYY-MM-DD>.{md,jpg,pdf}` — e.g. `bathroom-2026-05-09.jpg`,
-`bathroom-2026-05-09.md`. The dated suffix lets us add revisions without
-overwriting earlier captures.
+- **Notes:** `<area>-<YYYY-MM-DD>.md` — one markdown file per area, per
+  capture date. Revisions get a new dated file rather than overwriting.
+- **Images:** `<area>-<descriptor>-<YYYY-MM-DD>.{jpg,png,pdf}` — multiple
+  images can belong to the same notes file when the architect's plan is
+  cropped/framed differently across them. Examples:
+  `bathroom-mopsink-2026-05-09.jpg`, `bathroom-interior-2026-05-09.jpg`.
 
 ## Files
 
-- [`bathroom-2026-05-09.md`](bathroom-2026-05-09.md) — first bathroom
-  spec capture (dimensions + city-required grate). Image to be added.
+- [`bathroom-2026-05-09.md`](bathroom-2026-05-09.md) — unisex bathroom
+  (architect-sourced). Two image crops referenced; image files pending.
