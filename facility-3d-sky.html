@@ -208,6 +208,7 @@
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+    import { Reflector } from 'three/addons/objects/Reflector.js';
 
     /* ─────────────────────────────────────────────────────────────────
        Coordinate system (world units = feet) — LONG AXIS ALONG X:
@@ -325,62 +326,6 @@
     const matMoundTop = new THREE.MeshStandardMaterial({ color: PAL.moundTop, roughness: 0.7 });
     const matRubber = new THREE.MeshStandardMaterial({ color: PAL.rubber, roughness: 0.5 });
     const matBathWall = new THREE.MeshStandardMaterial({ color: PAL.bathWall, roughness: 0.85, side: THREE.DoubleSide });
-    // Faked glassy mirror — gradient texture with subtle streaks, shiny + slightly metallic.
-    function makeMirrorTexture() {
-      const c = document.createElement('canvas');
-      c.width = 1024; c.height = 384;
-      const ctx = c.getContext('2d');
-      // vertical gradient: sky tone at top → wall/floor tone at bottom
-      const grad = ctx.createLinearGradient(0, 0, 0, c.height);
-      grad.addColorStop(0,    '#dfeef5');
-      grad.addColorStop(0.45, '#cfe1ec');
-      grad.addColorStop(0.55, '#bcd2dd');
-      grad.addColorStop(1,    '#7d96a3');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, c.width, c.height);
-
-      // hint of horizon line where ceiling reflection meets floor reflection
-      ctx.fillStyle = 'rgba(255,255,255,0.18)';
-      ctx.fillRect(0, c.height * 0.50, c.width, 1);
-
-      // soft diagonal streaks
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-      ctx.lineWidth = 14;
-      for (let i = -3; i < 12; i++) {
-        ctx.beginPath();
-        ctx.moveTo(i * 100,            0);
-        ctx.lineTo(i * 100 + 280, c.height);
-        ctx.stroke();
-      }
-      // a couple of brighter highlight streaks
-      ctx.strokeStyle = 'rgba(255,255,255,0.16)';
-      ctx.lineWidth = 6;
-      for (const x of [220, 540, 820]) {
-        ctx.beginPath();
-        ctx.moveTo(x,            0);
-        ctx.lineTo(x + 200, c.height);
-        ctx.stroke();
-      }
-      ctx.globalCompositeOperation = 'source-over';
-
-      // very subtle bottom haze (like a smudge / floor reflection blur)
-      const bottom = ctx.createLinearGradient(0, c.height * 0.7, 0, c.height);
-      bottom.addColorStop(0, 'rgba(40,55,70,0)');
-      bottom.addColorStop(1, 'rgba(40,55,70,0.25)');
-      ctx.fillStyle = bottom;
-      ctx.fillRect(0, c.height * 0.7, c.width, c.height * 0.3);
-
-      const tex = new THREE.CanvasTexture(c);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.anisotropy = 8;
-      return tex;
-    }
-    // Mirror uses MeshBasicMaterial so the faked-reflection texture renders at
-    // full brightness — MeshStandardMaterial was darkening it via metalness shading.
-    const matMirror = new THREE.MeshBasicMaterial({
-      map: makeMirrorTexture(),
-    });
     const matMirrorFrame = new THREE.MeshStandardMaterial({ color: PAL.mirrorFrame, roughness: 0.55, metalness: 0.5 });
     const matWood = new THREE.MeshStandardMaterial({ color: PAL.wood, roughness: 0.8 });
     const matWoodDk = new THREE.MeshStandardMaterial({ color: PAL.woodDk, roughness: 0.85 });
@@ -1183,7 +1128,14 @@
        MIRROR WALL — on right wall (z=25), x=10..40, h=10
     ────────────────────────────────────────────────────────────────── */
     {
-      const mirror = new THREE.Mesh(new THREE.PlaneGeometry(30, 10), matMirror);
+      // Real-time reflective mirror — renders the scene from a mirrored camera
+      // each frame and projects it onto the surface. Reflects the gym in front.
+      const mirror = new Reflector(new THREE.PlaneGeometry(30, 10), {
+        clipBias: 0.003,
+        textureWidth:  1024,
+        textureHeight: 1024,
+        color: 0xc8dde8, // PAL.mirror tint applied to the reflection
+      });
       mirror.position.set(25, 5, 24.85);
       mirror.rotation.y = Math.PI; // face -z (into the building)
       scene.add(mirror);
