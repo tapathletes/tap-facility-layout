@@ -1375,6 +1375,104 @@
     }
 
     /* ─────────────────────────────────────────────────────────────────
+       DUMBBELL RACK + MED BALL RACK (CC BY 4.0 by MH, via Sketchfab)
+       Two instances of the same .gltf:
+         - Rack #1: dumbbells visible (default).      mirror-wall side
+         - Rack #2: dumbbells hidden, med balls on it. cage-net side
+       Real model dims: 170 × 50 × 85 cm (5.58 × 1.64 × 2.79 ft).
+       Both at x=71..76.6 (along the back end of the gym strip).
+    ────────────────────────────────────────────────────────────────── */
+    function makeMedBallTexture(topColor) {
+      const c = document.createElement('canvas');
+      c.width = 1024; c.height = 512;
+      const ctx = c.getContext('2d');
+      // Top half: bright color
+      ctx.fillStyle = topColor;
+      ctx.fillRect(0, 0, c.width, c.height / 2);
+      // Bottom half: black rubber
+      ctx.fillStyle = '#15171a';
+      ctx.fillRect(0, c.height / 2, c.width, c.height / 2);
+      // Center stripe with TAP branding
+      const stripeH = 70;
+      ctx.fillStyle = '#15171a';
+      ctx.fillRect(0, c.height / 2 - stripeH / 2, c.width, stripeH);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 38px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (let i = 0; i < 4; i++) {
+        ctx.fillText('TAP ATHLETES', c.width * (0.125 + i * 0.25), c.height / 2);
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 8;
+      return tex;
+    }
+
+    gltfLoader.load('assets/equipment/dumbbell-rack/scene.gltf', (gltf) => {
+      const proto = gltf.scene;
+
+      // Bbox to compute scale: target longest dim = 5.58 ft (170 cm).
+      const pbb  = new THREE.Box3().setFromObject(proto);
+      const psize = new THREE.Vector3(); pbb.getSize(psize);
+      const longest = Math.max(psize.x, psize.y, psize.z);
+      const scaleFactor = longest > 0 ? 5.58 / longest : 1;
+
+      function placeRack(opts) {
+        const rack = proto.clone(true);
+        rack.scale.setScalar(scaleFactor);
+        rack.traverse(c => {
+          if (!c.isMesh) return;
+          c.castShadow = true; c.receiveShadow = true;
+          if (opts.hideDumbbells) {
+            const matName = (c.material && c.material.name) || '';
+            if (matName === 'plastic' || matName === 'metal') {
+              c.visible = false;
+            }
+          }
+        });
+        // After scale, recompute the local bbox so we can sit the rack on the floor
+        const rbb  = new THREE.Box3().setFromObject(rack);
+        const rsize = new THREE.Vector3(); rbb.getSize(rsize);
+        rack.position.set(opts.x, -rbb.min.y, opts.z);
+        rack.rotation.y = opts.rotY || 0;
+        scene.add(rack);
+        return { rack, bbox: rbb, size: rsize };
+      }
+
+      // Rack #1 — with dumbbells, against the mirror wall just past the squat rack
+      placeRack({ x: 73.8, z: 23.7, hideDumbbells: false });
+
+      // Rack #2 — med balls instead of dumbbells, opposite side along the cage net
+      const r2 = placeRack({ x: 73.8, z: 13.97, hideDumbbells: true, rotY: Math.PI });
+
+      // Med balls on Rack #2 — two rows (top: lighter/smaller, bottom: heavier/bigger)
+      const medBallColors = ['#e8c84a', '#4a8acd', '#5fb959', '#a96cd4', '#cd4a4a']; // yellow/blue/green/purple/red
+      const r2x1 = r2.bbox.min.x, r2x2 = r2.bbox.max.x;
+      const r2y1 = r2.bbox.min.y, r2y2 = r2.bbox.max.y;
+      const r2zC = (r2.bbox.min.z + r2.bbox.max.z) / 2;
+      [
+        { y: r2y1 + (r2y2 - r2y1) * 0.62, r: 0.28 }, // top tier — 2 lb-ish, smaller
+        { y: r2y1 + (r2y2 - r2y1) * 0.20, r: 0.42 }, // bottom tier — 6 lb+, bigger
+      ].forEach((tier) => {
+        for (let i = 0; i < 5; i++) {
+          const t = (i + 0.5) / 5;
+          const x = r2x1 + t * (r2x2 - r2x1);
+          const tex = makeMedBallTexture(medBallColors[i]);
+          const ball = new THREE.Mesh(
+            new THREE.SphereGeometry(tier.r, 32, 24),
+            new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85, metalness: 0.05 })
+          );
+          ball.position.set(x, tier.y + tier.r, r2zC);
+          ball.castShadow = true;
+          scene.add(ball);
+        }
+      });
+    }, undefined, (err) => {
+      console.warn('[dumbbell-rack.gltf] failed to load:', err);
+    });
+
+    /* ─────────────────────────────────────────────────────────────────
        WELCOME MAT — just inside the front door (x=4..6, z=7.375..10.375)
     ────────────────────────────────────────────────────────────────── */
     {

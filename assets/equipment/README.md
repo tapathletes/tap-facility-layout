@@ -34,3 +34,13 @@ primitive-geometry placeholder in `facility-3d-sky.html`.
 
 `<equipment-type>-<source-or-sku>.glb` — keeps it obvious what each file
 represents at a glance.
+
+## Attributions
+
+CC BY 4.0 assets require credit. Keep this list current:
+
+- **Dumbbell Rack** by [MH](https://sketchfab.com/MH...) — CC BY 4.0 — from
+  Sketchfab: https://sketchfab.com/3d-models/dumbbell-rack-868439c605cf441e83d54a5fcfd64ab6
+- **CC0 Kettlebell** by plaggy — CC0 1.0 Public Domain (no attribution
+  required, included here for traceability) —
+  https://sketchfab.com/3d-models/cc0-kettlebell-801a68fa3ed449258bac6ee023446c15
