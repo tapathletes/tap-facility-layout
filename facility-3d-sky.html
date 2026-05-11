@@ -1242,20 +1242,38 @@
         u.position.set(x, 1.5 + 0.6, z);
         scene.add(u);
       });
+      // Photo-realistic kettlebells via CC0 .glb (plaggy, 1K PBR textures).
+      // Load once, clone 5 times scaled to match the existing size progression.
       const kbSizes = [0.35, 0.42, 0.50, 0.58, 0.66];
-      kbSizes.forEach((r, i) => {
-        const x = kx1 + 0.8 + (i / (kbSizes.length - 1)) * (kx2 - kx1 - 1.6);
-        const ball = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 16), matMetal);
-        ball.position.set(x, 0.6 + r + 0.05, (kz1+kz2)/2);
-        ball.castShadow = true;
-        scene.add(ball);
-        const handle = new THREE.Mesh(
-          new THREE.TorusGeometry(r * 0.5, 0.05, 8, 18, Math.PI),
-          matMetal
-        );
-        handle.position.set(x, 0.6 + r * 1.7 + 0.05, (kz1+kz2)/2);
-        handle.rotation.x = Math.PI / 2;
-        scene.add(handle);
+      gltfLoader.load('assets/equipment/kettlebell.glb', (gltf) => {
+        const proto = gltf.scene;
+        const bbox  = new THREE.Box3().setFromObject(proto);
+        const size  = new THREE.Vector3(); bbox.getSize(size);
+        const protoHeight = size.y || 1;
+
+        kbSizes.forEach((r, i) => {
+          const obj = proto.clone(true);
+          const targetHeight = r * 1.7;            // matches the old kettlebell vertical footprint
+          const s = targetHeight / protoHeight;
+          obj.scale.setScalar(s);
+
+          const x = kx1 + 0.8 + (i / (kbSizes.length - 1)) * (kx2 - kx1 - 1.6);
+          const baseOffset = -bbox.min.y * s;      // raise so the model's bottom sits on the rack base
+          obj.position.set(x, 0.6 + baseOffset, (kz1+kz2)/2);
+
+          obj.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+          scene.add(obj);
+        });
+      }, undefined, (err) => {
+        console.warn('[kettlebell.glb] failed to load, falling back to primitive spheres:', err);
+        // Primitive fallback so the rack isn't empty if the file 404s
+        kbSizes.forEach((r, i) => {
+          const x = kx1 + 0.8 + (i / (kbSizes.length - 1)) * (kx2 - kx1 - 1.6);
+          const ball = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 16), matMetal);
+          ball.position.set(x, 0.6 + r + 0.05, (kz1+kz2)/2);
+          ball.castShadow = true;
+          scene.add(ball);
+        });
       });
     }
 
