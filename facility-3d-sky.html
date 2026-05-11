@@ -225,9 +225,10 @@
        Right-side strip: z = 13.17..25 (~11.83' wide)
          - bathroom 6'-11 1/2" × 8'-8 1/2" (architect 2026-05-09) at x = 3..9.96, z = 16.29..25
          - mirror wall along z = 24.7, x = 10..40
-         - plyo rack at x = 42..50, z = 22..24.5
-         - kettlebell rack at x = 52..60, z = 22..24.5
+         - med ball rack at x ~43..49, z = 22.9..24.5 (dumbbell-rack .glb + procedural med balls)
+         - kettlebell rack at x = 52..60, z = 22..24.5 (.glb kettlebells on primitive base)
          - weight rack at x = 64..69.15, z = 20.95..24.4 (2-post quarter rack against z=25 wall, blue, 6.73' tall)
+         - dumbbell rack at x ~71..76.6, z = 22.9..24.5 (dumbbell-rack .glb)
        Door: on front wall (x = 0), span z = 7.375..10.375 (per architect: 7'-4 1/2" from z=0 edge)
     ────────────────────────────────────────────────────────────────── */
 
@@ -1191,40 +1192,6 @@
     }
 
     /* ─────────────────────────────────────────────────────────────────
-       PLYO BALL RACK (x=42..50, z=22..24.5, h=1.5)
-    ────────────────────────────────────────────────────────────────── */
-    {
-      const px1 = 42, px2 = 50, pz1 = 22, pz2 = 24.5, ph = 1.5;
-      const base = new THREE.Mesh(
-        new THREE.BoxGeometry(px2-px1, ph, pz2-pz1),
-        matWood
-      );
-      base.position.set((px1+px2)/2, ph/2, (pz1+pz2)/2);
-      base.castShadow = true;
-      scene.add(base);
-      const top = new THREE.Mesh(
-        new THREE.BoxGeometry(px2-px1+0.1, 0.1, pz2-pz1+0.1),
-        matWoodDk
-      );
-      top.position.set((px1+px2)/2, ph + 0.05, (pz1+pz2)/2);
-      scene.add(top);
-
-      // 4 plyo balls along x
-      const colors = [0xc2402d, 0x1e5fb8, 0x6a7884, 0x4a7c4e];
-      const sizes = [0.35, 0.42, 0.50, 0.58];
-      const xPositions = [43.0, 45.0, 47.0, 49.0];
-      colors.forEach((c, i) => {
-        const ball = new THREE.Mesh(
-          new THREE.SphereGeometry(sizes[i], 24, 16),
-          new THREE.MeshStandardMaterial({ color: c, roughness: 0.55 })
-        );
-        ball.position.set(xPositions[i], ph + sizes[i] + 0.05, (pz1+pz2)/2);
-        ball.castShadow = true;
-        scene.add(ball);
-      });
-    }
-
-    /* ─────────────────────────────────────────────────────────────────
        KETTLEBELL RACK (x=52..60, z=22..24.5)
     ────────────────────────────────────────────────────────────────── */
     {
@@ -1440,11 +1407,16 @@
         rack.traverse(c => {
           if (!c.isMesh) return;
           c.castShadow = true; c.receiveShadow = true;
-          if (opts.hideDumbbells) {
-            const matName = (c.material && c.material.name) || '';
-            if (matName === 'plastic' || matName === 'metal') {
-              c.visible = false;
-            }
+          const matName = (c.material && c.material.name) || '';
+          // Re-skin the bottom fabric mat from its default warm tone to black
+          // so it disappears against the dark rubber gym floor.
+          if (matName === 'fabric') {
+            c.material = new THREE.MeshStandardMaterial({
+              color: 0x111111, roughness: 0.95, metalness: 0,
+            });
+          }
+          if (opts.hideDumbbells && (matName === 'plastic' || matName === 'metal')) {
+            c.visible = false;
           }
         });
         wrapper.add(rack);
@@ -1459,8 +1431,9 @@
       // Rack #1 — with dumbbells, against the mirror wall just past the squat rack
       placeRack({ x: 73.8, z: 23.7, hideDumbbells: false });
 
-      // Rack #2 — med balls instead of dumbbells, opposite side along the cage net
-      const r2bbox = placeRack({ x: 73.8, z: 13.97, hideDumbbells: true, rotY: Math.PI });
+      // Rack #2 — med balls instead of dumbbells. Replaces the old primitive
+      // plyo-ball rack at x=42..50, so centered at x=46 along the mirror wall.
+      const r2bbox = placeRack({ x: 46, z: 23.7, hideDumbbells: true });
 
       // Med balls on Rack #2 — two rows (top: lighter/smaller, bottom: heavier/bigger)
       const medBallColors = ['#e8c84a', '#4a8acd', '#5fb959', '#a96cd4', '#cd4a4a']; // yellow/blue/green/purple/red
