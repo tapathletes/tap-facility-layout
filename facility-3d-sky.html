@@ -1475,18 +1475,26 @@
           if (!c.isMesh) return;
           c.castShadow = true; c.receiveShadow = true;
           const matName = (c.material && c.material.name) || '';
-          // Re-skin the bottom fabric mat from its default warm tone to black
-          // so it disappears against the dark rubber gym floor.
+          // The gltf's fabric mat is ~5.5×5.5 ft — much bigger than the rack
+          // frame. Hide it and replace with a properly-sized custom mat below
+          // so it doesn't poke through the building wall.
           if (matName === 'fabric') {
-            c.material = new THREE.MeshStandardMaterial({
-              color: 0x111111, roughness: 0.95, metalness: 0,
-            });
+            c.visible = false;
           }
           if (opts.hideDumbbells && (matName === 'plastic' || matName === 'metal')) {
             c.visible = false;
           }
         });
         wrapper.add(rack);
+
+        // Custom black floor mat sized to the rack frame footprint (5.7 × 1.9 ft).
+        const matMesh = new THREE.Mesh(
+          new THREE.BoxGeometry(5.7, 0.06, 1.9),
+          new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.95, metalness: 0 })
+        );
+        matMesh.position.set(0, 0.03, 0);
+        matMesh.receiveShadow = true;
+        wrapper.add(matMesh);
 
         // Now compute the WORLD bbox so callers can place things relative to
         // the actual on-screen rack location, not the proto's local space.
