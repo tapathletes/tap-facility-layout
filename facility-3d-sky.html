@@ -1411,16 +1411,32 @@
 
     gltfLoader.load('assets/equipment/dumbbell-rack/scene.gltf', (gltf) => {
       const proto = gltf.scene;
+      proto.updateMatrixWorld(true);
 
-      // Bbox to compute scale: target longest dim = 5.58 ft (170 cm).
-      const pbb  = new THREE.Box3().setFromObject(proto);
-      const psize = new THREE.Vector3(); pbb.getSize(psize);
-      const longest = Math.max(psize.x, psize.y, psize.z);
+      // Proto bbox (in the loaded model's own coord space) — used to compute
+      // scale + center offset so the rack lands centered + bottom-on-floor.
+      const protoBbox = new THREE.Box3().setFromObject(proto);
+      const protoSize = new THREE.Vector3(); protoBbox.getSize(protoSize);
+      const protoCenter = new THREE.Vector3(); protoBbox.getCenter(protoCenter);
+      const longest = Math.max(protoSize.x, protoSize.y, protoSize.z);
       const scaleFactor = longest > 0 ? 5.58 / longest : 1;
 
       function placeRack(opts) {
+        // Wrapper group sits at the world target (opts.x, 0, opts.z) and
+        // owns the rotation. The rack inside is offset so its bbox center +
+        // floor end up at the wrapper's origin.
+        const wrapper = new THREE.Group();
+        wrapper.position.set(opts.x, 0, opts.z);
+        wrapper.rotation.y = opts.rotY || 0;
+        scene.add(wrapper);
+
         const rack = proto.clone(true);
         rack.scale.setScalar(scaleFactor);
+        rack.position.set(
+          -protoCenter.x * scaleFactor,         // center horizontally
+          -protoBbox.min.y * scaleFactor,       // sit bottom on floor
+          -protoCenter.z * scaleFactor,         // center on depth
+        );
         rack.traverse(c => {
           if (!c.isMesh) return;
           c.castShadow = true; c.receiveShadow = true;
@@ -1431,30 +1447,31 @@
             }
           }
         });
-        // After scale, recompute the local bbox so we can sit the rack on the floor
-        const rbb  = new THREE.Box3().setFromObject(rack);
-        const rsize = new THREE.Vector3(); rbb.getSize(rsize);
-        rack.position.set(opts.x, -rbb.min.y, opts.z);
-        rack.rotation.y = opts.rotY || 0;
-        scene.add(rack);
-        return { rack, bbox: rbb, size: rsize };
+        wrapper.add(rack);
+
+        // Now compute the WORLD bbox so callers can place things relative to
+        // the actual on-screen rack location, not the proto's local space.
+        wrapper.updateMatrixWorld(true);
+        const worldBbox = new THREE.Box3().setFromObject(wrapper);
+        return worldBbox;
       }
 
       // Rack #1 — with dumbbells, against the mirror wall just past the squat rack
       placeRack({ x: 73.8, z: 23.7, hideDumbbells: false });
 
       // Rack #2 — med balls instead of dumbbells, opposite side along the cage net
-      const r2 = placeRack({ x: 73.8, z: 13.97, hideDumbbells: true, rotY: Math.PI });
+      const r2bbox = placeRack({ x: 73.8, z: 13.97, hideDumbbells: true, rotY: Math.PI });
 
       // Med balls on Rack #2 — two rows (top: lighter/smaller, bottom: heavier/bigger)
       const medBallColors = ['#e8c84a', '#4a8acd', '#5fb959', '#a96cd4', '#cd4a4a']; // yellow/blue/green/purple/red
-      const r2x1 = r2.bbox.min.x, r2x2 = r2.bbox.max.x;
-      const r2y1 = r2.bbox.min.y, r2y2 = r2.bbox.max.y;
-      const r2zC = (r2.bbox.min.z + r2.bbox.max.z) / 2;
+      const r2x1 = r2bbox.min.x, r2x2 = r2bbox.max.x;
+      const r2y1 = r2bbox.min.y, r2y2 = r2bbox.max.y;
+      const r2zC = (r2bbox.min.z + r2bbox.max.z) / 2;
       [
-        { y: r2y1 + (r2y2 - r2y1) * 0.62, r: 0.28 }, // top tier — 2 lb-ish, smaller
-        { y: r2y1 + (r2y2 - r2y1) * 0.20, r: 0.42 }, // bottom tier — 6 lb+, bigger
+        { yFrac: 0.62, r: 0.28 }, // top tier — 2 lb-ish, smaller
+        { yFrac: 0.20, r: 0.42 }, // bottom tier — 6 lb+, bigger
       ].forEach((tier) => {
+        const y = r2y1 + (r2y2 - r2y1) * tier.yFrac;
         for (let i = 0; i < 5; i++) {
           const t = (i + 0.5) / 5;
           const x = r2x1 + t * (r2x2 - r2x1);
@@ -1463,7 +1480,7 @@
             new THREE.SphereGeometry(tier.r, 32, 24),
             new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85, metalness: 0.05 })
           );
-          ball.position.set(x, tier.y + tier.r, r2zC);
+          ball.position.set(x, y + tier.r, r2zC);
           ball.castShadow = true;
           scene.add(ball);
         }
