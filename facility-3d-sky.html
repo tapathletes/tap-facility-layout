@@ -209,6 +209,8 @@
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
     import { Reflector } from 'three/addons/objects/Reflector.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
     /* ─────────────────────────────────────────────────────────────────
        Coordinate system (world units = feet) — LONG AXIS ALONG X:
@@ -266,6 +268,35 @@
     scene.background = new THREE.Color(0xa3c4d8); // daytime sky
     scene.fog = new THREE.Fog(0xc1d4df, 140, 380);
 
+    // Image-based lighting via a procedural indoor environment (PMREM).
+    // Every MeshStandardMaterial with envMap=null auto-picks this up as
+    // ambient/diffuse + reflection contribution — major realism win.
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    pmrem.dispose();
+
+    // GLTFLoader instance for future photo-realistic equipment pieces.
+    // Usage pattern (when assets land in assets/equipment/*.glb):
+    //   loadEquipment('assets/equipment/squat-rack.glb', { x: 67, y: 0, z: 16.7 });
+    const gltfLoader = new GLTFLoader();
+    function loadEquipment(path, { x = 0, y = 0, z = 0, rotY = 0, scale = 1 } = {}) {
+      gltfLoader.load(path, (gltf) => {
+        const obj = gltf.scene;
+        obj.position.set(x, y, z);
+        obj.rotation.y = rotY;
+        obj.scale.setScalar(scale);
+        obj.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        scene.add(obj);
+      }, undefined, (err) => {
+        console.warn(`[loadEquipment] failed to load ${path}:`, err);
+      });
+    }
+
     // Building center: (40, 4, 12.5). Default orbit looks at the glass front from outside.
     const orbitCam = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 600);
     orbitCam.position.set(-35, 28, 55);
@@ -276,7 +307,8 @@
     walkCam.lookAt(40, 5.6, 12.5);
 
     // ── Lighting ──────────────────────────────────────────────────────
-    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+    // Ambient kept low because scene.environment (PMREM) provides diffuse fill.
+    scene.add(new THREE.AmbientLight(0xffffff, 0.15));
 
     const sun = new THREE.DirectionalLight(0xfff4e0, 1.0);
     sun.position.set(-40, 70, 40);
