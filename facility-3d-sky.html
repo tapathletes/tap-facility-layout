@@ -1047,10 +1047,82 @@
       const plateGeom = new THREE.ExtrudeGeometry(shape, { depth: 0.06, bevelEnabled: false });
       const plateMat = new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: 0.4 });
 
+      // Catcher-target texture: dark teal background, dark catcher silhouette,
+      // 8 tan/orange mitts arranged around the strike zone with numbered
+      // positions (1 = center, 2/3 = sides, 4/5 = upper corners, 6/7 = low
+      // corners, 8 = high middle). Used as the back-net pitching target.
+      function makeCatcherTargetTexture() {
+        const c = document.createElement('canvas');
+        c.width = 1024; c.height = 1024;
+        const ctx = c.getContext('2d');
+
+        // Dark teal/slate background
+        ctx.fillStyle = '#1a2f3a';
+        ctx.fillRect(0, 0, c.width, c.height);
+
+        // Catcher body silhouette — chest protector
+        ctx.fillStyle = '#2a3540';
+        const bodyX = 400, bodyY = 380, bodyW = 224, bodyH = 360, bodyR = 50;
+        ctx.beginPath();
+        ctx.moveTo(bodyX + bodyR, bodyY);
+        ctx.lineTo(bodyX + bodyW - bodyR, bodyY);
+        ctx.quadraticCurveTo(bodyX + bodyW, bodyY, bodyX + bodyW, bodyY + bodyR);
+        ctx.lineTo(bodyX + bodyW, bodyY + bodyH - bodyR);
+        ctx.quadraticCurveTo(bodyX + bodyW, bodyY + bodyH, bodyX + bodyW - bodyR, bodyY + bodyH);
+        ctx.lineTo(bodyX + bodyR, bodyY + bodyH);
+        ctx.quadraticCurveTo(bodyX, bodyY + bodyH, bodyX, bodyY + bodyH - bodyR);
+        ctx.lineTo(bodyX, bodyY + bodyR);
+        ctx.quadraticCurveTo(bodyX, bodyY, bodyX + bodyR, bodyY);
+        ctx.closePath();
+        ctx.fill();
+
+        // Catcher mask/head
+        ctx.beginPath();
+        ctx.arc(512, 330, 78, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#3a4a55';
+        ctx.fillRect(454, 305, 116, 50);
+
+        // 8 catcher mitts/gloves
+        const mitts = [
+          { x: 512, y: 580, num: '1' }, // center
+          { x: 360, y: 580, num: '2' }, // left
+          { x: 664, y: 580, num: '3' }, // right
+          { x: 290, y: 420, num: '4' }, // upper left
+          { x: 734, y: 420, num: '5' }, // upper right
+          { x: 280, y: 760, num: '6' }, // lower left
+          { x: 744, y: 760, num: '7' }, // lower right
+          { x: 512, y: 200, num: '8' }, // top center
+        ];
+
+        mitts.forEach(m => {
+          // dark stitched edge
+          ctx.fillStyle = '#15171a';
+          ctx.beginPath();
+          ctx.ellipse(m.x, m.y, 95, 68, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // tan glove face
+          ctx.fillStyle = '#d4825a';
+          ctx.beginPath();
+          ctx.ellipse(m.x, m.y, 85, 58, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // number
+          ctx.fillStyle = '#15171a';
+          ctx.font = '900 60px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(m.num, m.x, m.y + 4);
+        });
+
+        const tex = new THREE.CanvasTexture(c);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = 8;
+        return tex;
+      }
+
       const tgtMat = new THREE.MeshBasicMaterial({
-        color: 0xb8d4e0, transparent: true, opacity: 0.7, side: THREE.DoubleSide,
+        map: makeCatcherTargetTexture(), side: THREE.DoubleSide,
       });
-      const bullseyeMat = new THREE.MeshBasicMaterial({ color: 0xb8d4e0, side: THREE.DoubleSide });
 
       [cageZ1+3, cageZ2-4].forEach(z => {
         // home plate
@@ -1059,16 +1131,11 @@
         plate.position.set(69, 0.07, z);
         scene.add(plate);
 
-        // strike-zone target on back net (x=77), centered above the plate
-        const tgt = new THREE.Mesh(new THREE.PlaneGeometry(3, 2.5), tgtMat);
+        // Catcher target on back net (x=77), centered above the plate
+        const tgt = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), tgtMat);
         tgt.position.set(76.95, 3.7, z);
         tgt.rotation.y = -Math.PI / 2;
         scene.add(tgt);
-
-        const bullseye = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.5, 32), bullseyeMat);
-        bullseye.position.set(76.94, 3.7, z);
-        bullseye.rotation.y = -Math.PI / 2;
-        scene.add(bullseye);
       });
     }
 
