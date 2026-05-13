@@ -11,8 +11,8 @@ purchase orders, not just to impress.
 
 Active:
 
-- [`facility-3d-sky.html`](facility-3d-sky.html) — Three.js walkthrough,
-  sky-blue turf.
+- [`sky/`](sky/) — Three.js walkthrough, sky-blue turf
+  (served at `facility.tapathletes.com/sky/`).
 - [`facility-3d.html`](facility-3d.html) — Three.js walkthrough, black turf.
 
 Archive:

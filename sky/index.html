@@ -278,7 +278,7 @@
 
     // GLTFLoader instance for future photo-realistic equipment pieces.
     // Usage pattern (when assets land in assets/equipment/*.glb):
-    //   loadEquipment('assets/equipment/squat-rack.glb', { x: 67, y: 0, z: 16.7 });
+    //   loadEquipment('../assets/equipment/squat-rack.glb', { x: 67, y: 0, z: 16.7 });
     const gltfLoader = new GLTFLoader();
     function loadEquipment(path, { x = 0, y = 0, z = 0, rotY = 0, scale = 1 } = {}) {
       gltfLoader.load(path, (gltf) => {
@@ -1279,7 +1279,7 @@
       // Photo-realistic kettlebells via CC0 .glb (plaggy, 1K PBR textures).
       // Load once, clone 5 times scaled to match the existing size progression.
       const kbSizes = [0.35, 0.42, 0.50, 0.58, 0.66];
-      gltfLoader.load('assets/equipment/kettlebell.glb', (gltf) => {
+      gltfLoader.load('../assets/equipment/kettlebell.glb', (gltf) => {
         const proto = gltf.scene;
         const bbox  = new THREE.Box3().setFromObject(proto);
         const size  = new THREE.Vector3(); bbox.getSize(size);
@@ -1443,7 +1443,7 @@
       return tex;
     }
 
-    gltfLoader.load('assets/equipment/dumbbell-rack/scene.gltf', (gltf) => {
+    gltfLoader.load('../assets/equipment/dumbbell-rack/scene.gltf', (gltf) => {
       const proto = gltf.scene;
       proto.updateMatrixWorld(true);
 
