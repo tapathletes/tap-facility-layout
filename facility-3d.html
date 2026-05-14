@@ -206,6 +206,14 @@
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+    import { Reflector } from 'three/addons/objects/Reflector.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+    import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
     /* ─────────────────────────────────────────────────────────────────
        Coordinate system (world units = feet) — LONG AXIS ALONG X:
@@ -270,8 +278,43 @@
     walkCam.position.set(1.5, 5.6, 15.5); // standing just inside the front door
     walkCam.lookAt(40, 5.6, 12.5);
 
+    // ── Image-based lighting (PMREM) ─────────────────────────────────
+    // Procedural indoor environment that every MeshStandardMaterial picks up
+    // as ambient/diffuse fill + reflection contribution.
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    pmrem.dispose();
+
+    // Required for RectAreaLights to render correctly
+    RectAreaLightUniformsLib.init();
+
+    // ── Post-processing pipeline ─────────────────────────────────────
+    // Composer chain: render → SSAO → bloom → tone-mapped output.
+    // SSAO grounds geometry into corners; bloom blooms light fixtures + mirror.
+    let activeCam = orbitCam;
+    const composer = new EffectComposer(renderer);
+    const renderPass = new RenderPass(scene, activeCam);
+    composer.addPass(renderPass);
+
+    const ssaoPass = new SSAOPass(scene, activeCam, window.innerWidth, window.innerHeight);
+    ssaoPass.kernelRadius = 0.5;     // small radius — gym corners are tight
+    ssaoPass.minDistance   = 0.001;
+    ssaoPass.maxDistance   = 0.1;
+    composer.addPass(ssaoPass);
+
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      0.45,  // strength
+      0.5,   // radius
+      0.82   // threshold — only the brightest fixtures + reflections bloom
+    );
+    composer.addPass(bloomPass);
+
+    composer.addPass(new OutputPass());
+
     // ── Lighting ──────────────────────────────────────────────────────
-    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+    // Ambient kept low — envmap + interior fixtures provide most of the fill.
+    scene.add(new THREE.AmbientLight(0xffffff, 0.15));
 
     const sun = new THREE.DirectionalLight(0xfff4e0, 1.0);
     sun.position.set(-40, 70, 40);
@@ -285,6 +328,33 @@
     sun.shadow.camera.far = 250;
     sun.shadow.bias = -0.0005;
     scene.add(sun);
+
+    // ── Interior overhead lighting (high-bay LED fixtures) ──────────
+    // Two rows of 3 fixtures: one row over the cage lanes, one over the
+    // gym strip. Emissive fixture body + RectAreaLight beneath = visible
+    // light source + actual illumination + something for the floor reflector
+    // and wall mirror to pick up.
+    const fixtureMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0xfff0d0,
+      emissiveIntensity: 1.6,
+      roughness: 0.6,
+      metalness: 0.0,
+    });
+    const fixtureSlots = [
+      { x: 18, z: 6 }, { x: 40, z: 6 }, { x: 62, z: 6 },     // over cage lanes
+      { x: 18, z: 19 }, { x: 40, z: 19 }, { x: 62, z: 19 },  // over gym strip
+    ];
+    fixtureSlots.forEach((p) => {
+      const fixture = new THREE.Mesh(new THREE.BoxGeometry(4, 0.25, 1.2), fixtureMat);
+      fixture.position.set(p.x, 13.7, p.z); // just below 14ft ceiling
+      scene.add(fixture);
+
+      const light = new THREE.RectAreaLight(0xfff0d0, 5, 4, 1.2);
+      light.position.set(p.x, 13.6, p.z);
+      light.lookAt(p.x, 0, p.z); // shine straight down
+      scene.add(light);
+    });
 
     scene.add(new THREE.HemisphereLight(0xb8d4e0, 0x2a3640, 0.45));
 
@@ -1225,11 +1295,32 @@
     }
 
     /* ─────────────────────────────────────────────────────────────────
+       FLOOR REFLECTOR — subtle "wet rubber" sheen on the gym strip
+       Heavy dark tint so only fixtures + bright edges show in reflection.
+    ────────────────────────────────────────────────────────────────── */
+    {
+      const floorReflector = new Reflector(
+        new THREE.PlaneGeometry(67, 11.5),
+        {
+          clipBias: 0.003,
+          textureWidth: 1024,
+          textureHeight: 256,
+          color: 0x0a0a0a, // very dark tint — only highlights survive
+        }
+      );
+      floorReflector.position.set(43.5, 0.02, 19.25); // gym strip, just above floor
+      floorReflector.rotation.x = -Math.PI / 2;       // face +y (up)
+      scene.add(floorReflector);
+    }
+
+    /* ─────────────────────────────────────────────────────────────────
        CONTROLS — orbit + walk
     ────────────────────────────────────────────────────────────────── */
 
     let mode = 'orbit';
-    let activeCam = orbitCam;
+    // activeCam is declared earlier (alongside the composer setup) so the
+    // post-processing passes can reference it. The setMode() handler below
+    // reassigns it when switching between orbit/walk.
 
     const orbit = new OrbitControls(orbitCam, renderer.domElement);
     orbit.target.set(40, 4, 12.5);
@@ -1350,6 +1441,9 @@
     window.addEventListener('resize', () => {
       const w = window.innerWidth, h = window.innerHeight;
       renderer.setSize(w, h);
+      composer.setSize(w, h);
+      ssaoPass.setSize(w, h);
+      bloomPass.setSize(w, h);
       orbitCam.aspect = w / h; orbitCam.updateProjectionMatrix();
       walkCam.aspect = w / h; walkCam.updateProjectionMatrix();
     });
@@ -1358,7 +1452,12 @@
       const dt = Math.min(clock.getDelta(), 0.05);
       if (mode === 'walk') updateWalk(dt);
       else orbit.update();
-      renderer.render(scene, activeCam);
+
+      // Post-processing passes need the active camera each frame
+      renderPass.camera = activeCam;
+      ssaoPass.camera   = activeCam;
+      composer.render();
+
       requestAnimationFrame(animate);
     }
     animate();
