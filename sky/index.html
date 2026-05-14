@@ -2,958 +2,196 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>TAP Athletes — Facility Tour</title>
-<meta name="description" content="A facility tour for Training Athletic Performance — Rogers, AR." />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link
-  rel="stylesheet"
-  href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
-/>
+<title>TAP Athletes — Facility 3D (Sky Blue Turf)</title>
 <style>
   :root {
-    /* Inks (dark surface ladder) */
-    --ink-950: #06080b;
-    --ink-900: #0a0d12;
-    --ink-850: #0d1116;
-    --ink-800: #11161c;
-    --ink-750: #151b22;
-    --ink-700: #1c232b;
-    --ink-600: #262e38;
-    --ink-500: #3a4a55;
-
-    /* Paper / text */
-    --paper: #ebeff4;
-    --paper-dim: #b9c2cc;
-    --muted: #6e7882;
-    --muted-dim: #4a525c;
-
-    /* Rules / hairlines */
-    --rule: rgba(255, 255, 255, 0.06);
-    --rule-bright: rgba(255, 255, 255, 0.13);
-    --rule-warm: rgba(200, 154, 94, 0.35);
-
-    /* Accents */
-    --accent: #a4c4d6;            /* refined powder blue */
-    --accent-bright: #d4e6ef;
-    --warm: #c89a5e;              /* leather-glove amber — unexpected athletic accent */
-    --warm-bright: #e0b878;
-
-    --shadow-panel: 0 14px 36px -10px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--rule);
-    --shadow-card:  0 28px 72px -16px rgba(0, 0, 0, 0.7),  0 0 0 1px var(--rule), 0 1px 0 rgba(255,255,255,0.05) inset;
-
-    --font-display: 'Fraunces', 'Times New Roman', serif;
-    --font-ui:      'Manrope', -apple-system, 'Segoe UI', system-ui, sans-serif;
-    --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
-
-    --t-fast: 180ms cubic-bezier(0.4, 0, 0.2, 1);
-    --t-base: 320ms cubic-bezier(0.4, 0, 0.2, 1);
-    --t-slow: 640ms cubic-bezier(0.16, 1, 0.3, 1);
+    --slate: #3a4a55;
+    --slate-deep: #2a3640;
+    --powder: #b8d4e0;
+    --paper: #f5f8fb;
+    --ink: #1a232b;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
   html, body {
     height: 100%;
-    background: var(--ink-900);
-    color: var(--paper);
-    font-family: var(--font-ui);
-    font-feature-settings: "ss01", "cv11";
+    background: #0a0d12;
+    color: #e6ecf2;
+    font-family: 'Inter', system-ui, sans-serif;
     overflow: hidden;
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
   }
-
-  /* Atmospheric grain overlay — fixed top layer, never blocks pointer events */
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 200;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    mix-blend-mode: overlay;
-    opacity: 0.04;
-  }
-
   #app { position: fixed; inset: 0; }
   canvas { display: block; }
 
-  /* ─────────────────────────────────────────────────────────────────
-     BRAND BLOCK — top-left
-  ────────────────────────────────────────────────────────────────── */
-  .brand {
+  .hud {
     position: fixed;
-    top: 26px;
-    left: 30px;
-    z-index: 30;
-    display: flex;
-    align-items: baseline;
-    gap: 16px;
     pointer-events: none;
-    user-select: none;
-    animation: fadeUp var(--t-slow) both 0.15s;
+    color: #e6ecf2;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    font-size: 13px;
+    letter-spacing: 0.5px;
   }
-  .brand__mark {
-    position: relative;
-    display: inline-flex;
-    align-items: baseline;
+  .hud.top-left   { top: 16px; left: 16px; }
+  .hud.top-right  { top: 16px; right: 16px; text-align: right; }
+  .hud .title {
+    font-weight: 800; font-size: 18px; letter-spacing: 2px;
+    color: #fff;
   }
-  .brand__mark-text {
-    font-family: var(--font-display);
-    font-weight: 500;
-    font-style: italic;
-    font-size: 36px;
-    line-height: 1;
-    letter-spacing: -0.025em;
-    color: var(--paper);
-    font-variation-settings: "SOFT" 100, "opsz" 60;
+  .hud .sub {
+    font-weight: 500; font-size: 11px; letter-spacing: 3px;
+    color: #b8d4e0; margin-top: 2px;
   }
-  .brand__mark-dot {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--warm);
-    margin-left: 6px;
-    margin-bottom: 4px;
-    box-shadow: 0 0 12px var(--warm-bright);
-    animation: livePulse 2.4s ease-in-out infinite;
-  }
-  .brand__rule {
-    width: 1px;
-    height: 26px;
-    background: var(--rule-bright);
-  }
-  .brand__detail {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    padding-bottom: 4px;
-  }
-  .brand__name {
-    font-family: var(--font-ui);
-    font-weight: 700;
-    font-size: 10.5px;
-    letter-spacing: 0.35em;
-    color: var(--paper);
-    text-transform: uppercase;
-  }
-  .brand__sub {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-family: var(--font-mono);
-    font-size: 9px;
-    letter-spacing: 0.24em;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
-  .brand__sub-rule {
-    display: inline-block;
-    width: 14px;
-    height: 1px;
-    background: var(--rule-bright);
+  .hud .mono {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 11px; letter-spacing: 1.5px; opacity: 0.8;
   }
 
-  /* ─────────────────────────────────────────────────────────────────
-     STATS — top-right
-  ────────────────────────────────────────────────────────────────── */
-  .stats {
+  .panel {
     position: fixed;
-    top: 26px;
-    right: 30px;
-    z-index: 30;
-    text-align: right;
-    pointer-events: none;
-    user-select: none;
+    top: 16px; left: 50%; transform: translateX(-50%);
+    background: rgba(20, 28, 36, 0.88);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(184, 212, 224, 0.2);
+    border-radius: 6px;
+    padding: 6px;
     display: flex;
-    flex-direction: column;
-    gap: 14px;
-    animation: fadeUp var(--t-slow) both 0.25s;
-  }
-  .stats__row {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-  .stats__label {
-    font-family: var(--font-mono);
-    font-size: 9px;
-    letter-spacing: 0.32em;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
-  .stats__value {
-    font-family: var(--font-display);
-    font-weight: 400;
-    font-size: 17px;
-    letter-spacing: -0.01em;
-    line-height: 1;
-    color: var(--paper);
-    font-variation-settings: "opsz" 24;
-  }
-  .stats__value .x {
-    font-style: italic;
-    font-weight: 300;
-    color: var(--muted);
-    margin: 0 3px;
-  }
-  .stats__unit {
-    font-family: var(--font-mono);
-    font-style: normal;
-    font-weight: 500;
-    font-size: 9px;
-    letter-spacing: 0.2em;
-    color: var(--muted);
-    margin-left: 5px;
-    vertical-align: 3px;
-  }
-  .stats__value--mono {
-    font-family: var(--font-mono) !important;
-    font-style: normal !important;
-    font-weight: 500;
-    font-size: 12.5px;
-    letter-spacing: 0.22em;
-    color: var(--accent);
-    text-transform: uppercase;
-  }
-
-  /* ─────────────────────────────────────────────────────────────────
-     CONTROL PANEL — top-center (capsule, grouped sections)
-  ────────────────────────────────────────────────────────────────── */
-  .controls {
-    position: fixed;
-    top: 26px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 30;
-    display: flex;
-    align-items: stretch;
-    gap: 18px;
-    padding: 8px 14px;
-    background: rgba(13, 17, 22, 0.72);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid var(--rule-bright);
-    border-radius: 999px;
-    box-shadow: var(--shadow-panel);
-    pointer-events: auto;
-    animation: panelDrop var(--t-slow) both 0.35s;
-  }
-  .controls__group {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     gap: 4px;
-    padding: 0 4px;
+    pointer-events: auto;
+    z-index: 10;
   }
-  .controls__label {
-    font-family: var(--font-mono);
-    font-size: 8px;
-    letter-spacing: 0.34em;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
-  .controls__buttons {
-    display: flex;
-    gap: 2px;
-    align-items: center;
-  }
-  .controls__divider {
-    width: 1px;
-    background: var(--rule-bright);
-    margin: 6px 0;
-  }
-  .controls button {
+  .panel button {
     background: transparent;
-    color: var(--paper-dim);
+    color: #b8d4e0;
     border: 1px solid transparent;
-    padding: 8px 15px;
-    font-family: var(--font-ui);
-    font-size: 10.5px;
+    padding: 8px 14px;
+    font-family: inherit;
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.18em;
+    letter-spacing: 2px;
     cursor: pointer;
-    border-radius: 999px;
-    text-transform: uppercase;
-    transition: color var(--t-fast), background var(--t-fast), letter-spacing var(--t-fast);
-  }
-  .controls button:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--paper);
-    letter-spacing: 0.2em;
-  }
-  .controls button.active {
-    background: var(--paper);
-    color: var(--ink-900);
-  }
-  .controls button#bay-door-toggle.active {
-    background: var(--warm);
-    color: var(--ink-900);
-    box-shadow: 0 0 0 4px rgba(200, 154, 94, 0.15);
-  }
-
-  /* ─────────────────────────────────────────────────────────────────
-     HELP BAR — bottom-center
-  ────────────────────────────────────────────────────────────────── */
-  .help-bar {
-    position: fixed;
-    bottom: 26px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 30;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 11px 20px;
-    background: rgba(13, 17, 22, 0.62);
-    backdrop-filter: blur(16px) saturate(160%);
-    -webkit-backdrop-filter: blur(16px) saturate(160%);
-    border: 1px solid var(--rule);
-    border-radius: 999px;
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 0.18em;
-    color: var(--paper-dim);
-    text-transform: uppercase;
-    pointer-events: none;
-    animation: barRise var(--t-slow) both 0.5s;
-  }
-  .help-bar__label {
-    color: var(--muted);
-    font-size: 8.5px;
-    letter-spacing: 0.32em;
-  }
-  .help-bar__rule {
-    display: inline-block;
-    width: 14px;
-    height: 1px;
-    background: var(--rule-bright);
-  }
-  .help-bar .dot {
-    width: 3px;
-    height: 3px;
-    background: var(--muted-dim);
-    border-radius: 999px;
-  }
-  .help-bar kbd {
-    display: inline-block;
-    background: linear-gradient(180deg, var(--ink-700), var(--ink-800));
-    color: var(--paper);
-    padding: 3px 7px;
-    margin: 0 1px;
-    font-family: var(--font-mono);
-    font-size: 9.5px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
     border-radius: 4px;
-    border: 1px solid var(--rule-bright);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 2px 4px rgba(0, 0, 0, 0.3);
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .panel button:hover { background: rgba(184, 212, 224, 0.12); }
+  .panel button.active {
+    background: #3a4a55;
+    color: #fff;
+    border-color: rgba(184, 212, 224, 0.4);
+  }
+  .panel .divider {
+    width: 1px;
+    background: rgba(184, 212, 224, 0.15);
+    margin: 4px 2px;
   }
 
-  /* ─────────────────────────────────────────────────────────────────
-     WALK-MODE LOCK HINT — cinematic full-screen
-  ────────────────────────────────────────────────────────────────── */
-  #lock-hint {
+  .help {
     position: fixed;
-    inset: 0;
+    bottom: 16px; left: 50%; transform: translateX(-50%);
+    background: rgba(20, 28, 36, 0.88);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(184, 212, 224, 0.15);
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: #b8d4e0;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .help kbd {
+    display: inline-block;
+    background: #3a4a55;
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: 10px;
+    margin: 0 2px;
+  }
+
+  #lock-hint {
+    position: fixed; inset: 0;
     display: none;
-    align-items: center;
-    justify-content: center;
-    background:
-      radial-gradient(ellipse 70% 50% at 50% 50%, rgba(10, 13, 18, 0.85), rgba(10, 13, 18, 0.97)),
-      linear-gradient(180deg, rgba(10, 13, 18, 0.85), rgba(6, 8, 11, 0.95));
-    backdrop-filter: blur(20px) saturate(140%);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
-    z-index: 90;
+    align-items: center; justify-content: center;
+    background: rgba(8, 12, 18, 0.78);
+    backdrop-filter: blur(4px);
+    z-index: 20;
     cursor: pointer;
     pointer-events: auto;
   }
   #lock-hint.show { display: flex; }
-  #lock-hint .lock-inner {
+  #lock-hint .card {
+    background: #1a232b;
+    border: 1px solid rgba(184, 212, 224, 0.3);
+    border-radius: 8px;
+    padding: 28px 36px;
     text-align: center;
-    max-width: 520px;
-    padding: 48px;
-    animation: lockRise var(--t-base) both;
+    max-width: 360px;
   }
-  #lock-hint .lock-eyebrow {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 0.42em;
-    color: var(--warm);
-    text-transform: uppercase;
-    margin-bottom: 18px;
-  }
-  #lock-hint h2 {
-    font-family: var(--font-display);
-    font-weight: 400;
-    font-style: italic;
-    font-size: clamp(36px, 5vw, 52px);
-    letter-spacing: -0.025em;
-    line-height: 1;
-    color: var(--paper);
-    margin-bottom: 22px;
-    font-variation-settings: "SOFT" 100, "opsz" 120;
-  }
-  #lock-hint p {
-    font-family: var(--font-ui);
-    font-weight: 400;
-    font-size: 13.5px;
-    line-height: 1.7;
-    color: var(--paper-dim);
-    margin: 0 auto 36px;
-    max-width: 420px;
-    letter-spacing: 0.01em;
-  }
-  #lock-hint p kbd {
-    display: inline-block;
-    background: var(--ink-700);
-    color: var(--paper);
-    padding: 2px 7px;
-    margin: 0 1px;
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    border-radius: 4px;
-    border: 1px solid var(--rule-bright);
-  }
-  #lock-hint .lock-cta {
-    display: inline-flex;
-    align-items: center;
-    gap: 14px;
-    font-family: var(--font-ui);
-    font-size: 11px;
-    letter-spacing: 0.36em;
-    text-transform: uppercase;
-    color: var(--ink-900);
-    background: var(--paper);
-    padding: 16px 32px;
-    border-radius: 999px;
-    font-weight: 700;
-    transition: transform var(--t-fast), background var(--t-fast);
-  }
-  #lock-hint:hover .lock-cta {
-    transform: translateY(-2px);
-    background: var(--accent-bright);
-  }
-  #lock-hint .lock-cta::after {
-    content: '→';
-    font-family: var(--font-display);
+  #lock-hint .card h2 {
     font-size: 18px;
-    line-height: 1;
-    transition: transform var(--t-fast);
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #fff;
+    margin-bottom: 8px;
   }
-  #lock-hint:hover .lock-cta::after { transform: translateX(4px); }
-
-  /* ─────────────────────────────────────────────────────────────────
-     INTRO / WELCOME OVERLAY — press-kit cover
-  ────────────────────────────────────────────────────────────────── */
-  .intro {
-    position: fixed;
-    inset: 0;
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    background: var(--ink-900);
-    color: var(--paper);
-    transition: opacity 600ms cubic-bezier(0.4, 0, 0.2, 1);
-    pointer-events: auto;
-  }
-  .intro.hide {
-    opacity: 0;
-    pointer-events: none;
-  }
-  .intro__bg {
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(ellipse 80% 50% at 18% 28%, rgba(164, 196, 214, 0.07), transparent 70%),
-      radial-gradient(ellipse 50% 40% at 92% 86%, rgba(200, 154, 94, 0.05), transparent 70%),
-      linear-gradient(180deg, var(--ink-900), var(--ink-950));
-    pointer-events: none;
-  }
-  .intro__topbar {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    align-items: center;
-    padding: 26px 8vw;
-    border-bottom: 1px solid var(--rule);
-    animation: introFadeDown 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-  .intro__topbar-left {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 0.34em;
-    color: var(--warm);
-    text-transform: uppercase;
-  }
-  .intro__topbar-mid {
-    font-family: var(--font-display);
-    font-style: italic;
-    font-weight: 500;
-    font-size: 14px;
-    letter-spacing: 0.02em;
-    color: var(--paper);
-    text-align: center;
-    font-variation-settings: "SOFT" 100;
-  }
-  .intro__topbar-right {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 0.34em;
-    color: var(--muted);
-    text-transform: uppercase;
-    text-align: right;
-  }
-  .intro__grid {
-    flex: 1;
-    display: grid;
-    grid-template-columns: 1.5fr 1fr;
-    gap: 80px;
-    padding: 7vh 8vw 5vh;
-    position: relative;
-    z-index: 1;
-    min-height: 0;
-  }
-  .intro__col--lead {
-    display: flex;
-    flex-direction: column;
-    gap: 28px;
-    animation: introFadeUp 700ms cubic-bezier(0.16, 1, 0.3, 1) both 0.1s;
-    min-width: 0;
-  }
-  .intro__col--stats {
-    display: flex;
-    flex-direction: column;
-    gap: 22px;
-    align-self: flex-start;
-    padding-top: 18px;
-    border-top: 1px solid var(--rule-bright);
-    animation: introFadeUp 700ms cubic-bezier(0.16, 1, 0.3, 1) both 0.3s;
-  }
-  .intro__title {
-    font-family: var(--font-display);
-    font-weight: 400;
-    font-size: clamp(76px, 12vw, 188px);
-    line-height: 0.9;
-    letter-spacing: -0.035em;
-    color: var(--paper);
-    margin: 0;
-    font-variation-settings: "SOFT" 100, "opsz" 144;
-  }
-  .intro__title-mark {
-    display: block;
-    font-weight: 500;
-  }
-  .intro__title-italic {
-    display: block;
-    font-style: italic;
-    font-weight: 400;
-    color: var(--paper-dim);
-    padding-left: 0.5em;
-    margin-top: -0.05em;
-  }
-  .intro__pitch {
-    font-family: var(--font-display);
-    font-weight: 300;
-    font-style: italic;
-    font-size: clamp(20px, 1.6vw, 26px);
-    line-height: 1.35;
-    color: var(--paper-dim);
-    max-width: 540px;
-    font-variation-settings: "SOFT" 100, "opsz" 72;
-  }
-  .intro__hint {
-    font-family: var(--font-mono);
-    font-size: 10.5px;
-    letter-spacing: 0.16em;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-top: -8px;
-  }
-  .intro__meta {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    font-family: var(--font-mono);
-    font-size: 9.5px;
-    letter-spacing: 0.35em;
-    color: var(--paper-dim);
-    text-transform: uppercase;
-    margin-top: 8px;
-  }
-  .intro__meta-sep {
-    display: inline-block;
-    width: 22px;
-    height: 1px;
-    background: var(--rule-bright);
-  }
-  .intro__stat {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding-bottom: 18px;
-    border-bottom: 1px solid var(--rule);
-  }
-  .intro__stat:last-child { border-bottom: none; }
-  .intro__stat-label {
-    font-family: var(--font-mono);
-    font-size: 9px;
-    letter-spacing: 0.32em;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
-  .intro__stat-value {
-    font-family: var(--font-display);
-    font-weight: 400;
-    font-size: 32px;
-    line-height: 1.05;
-    color: var(--paper);
-    letter-spacing: -0.015em;
-    font-variation-settings: "opsz" 60;
-  }
-  .intro__stat-value .x {
-    font-style: italic;
-    font-weight: 300;
-    color: var(--muted);
-    margin: 0 4px;
-  }
-  .intro__stat-value span:not(.x) {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 0.22em;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-left: 6px;
-    vertical-align: 8px;
-  }
-  .intro__footer {
-    padding: 24px 8vw 30px;
-    border-top: 1px solid var(--rule);
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    gap: 24px;
-    position: relative;
-    z-index: 1;
-    animation: introFadeUp 700ms cubic-bezier(0.16, 1, 0.3, 1) both 0.5s;
-  }
-  .intro__loc {
-    font-family: var(--font-mono);
-    font-size: 9px;
-    letter-spacing: 0.32em;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
-  .intro__doc {
-    font-family: var(--font-mono);
-    font-size: 9px;
-    letter-spacing: 0.32em;
-    color: var(--muted);
-    text-transform: uppercase;
-    text-align: right;
-  }
-  .intro__cta {
-    display: inline-flex;
-    align-items: center;
-    gap: 14px;
-    background: var(--paper);
-    color: var(--ink-900);
-    border: none;
-    padding: 18px 38px;
-    border-radius: 999px;
-    font-family: var(--font-ui);
+  #lock-hint .card p {
     font-size: 12px;
-    letter-spacing: 0.34em;
+    letter-spacing: 1px;
+    color: #b8d4e0;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  #lock-hint .card .cta {
+    background: #b8d4e0;
+    color: #1a232b;
+    padding: 10px 20px;
+    border-radius: 4px;
     font-weight: 700;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: transform var(--t-fast), background var(--t-fast), padding var(--t-fast);
-  }
-  .intro__cta:hover {
-    transform: translateY(-2px);
-    background: var(--accent-bright);
-    padding-right: 42px;
-  }
-  .intro__cta-arrow {
-    font-family: var(--font-display);
-    font-weight: 400;
-    font-size: 20px;
-    line-height: 1;
-    transition: transform var(--t-fast);
-  }
-  .intro__cta:hover .intro__cta-arrow { transform: translateX(5px); }
-
-  /* Hide HUD while intro is up */
-  body:has(.intro:not(.hide)) .brand,
-  body:has(.intro:not(.hide)) .stats,
-  body:has(.intro:not(.hide)) .controls,
-  body:has(.intro:not(.hide)) .help-bar {
-    opacity: 0;
-    transition: opacity 0s;
-  }
-
-  /* ─────────────────────────────────────────────────────────────────
-     ANIMATIONS
-  ────────────────────────────────────────────────────────────────── */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(10px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes panelDrop {
-    from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
-    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-  }
-  @keyframes barRise {
-    from { opacity: 0; transform: translateX(-50%) translateY(10px); }
-    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-  }
-  @keyframes introFadeUp {
-    from { opacity: 0; transform: translateY(22px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes introFadeDown {
-    from { opacity: 0; transform: translateY(-12px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes lockRise {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes livePulse {
-    0%, 100% { opacity: 0.4; }
-    50%      { opacity: 1; }
-  }
-
-  /* Reduced motion */
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      animation-duration: 0.01ms !important;
-      transition-duration: 0.01ms !important;
-    }
-  }
-
-  /* Narrow viewports */
-  @media (max-width: 900px) {
-    .brand { top: 16px; left: 16px; gap: 10px; }
-    .brand__mark-text { font-size: 28px; }
-    .brand__rule { height: 20px; }
-    .brand__name { font-size: 9.5px; letter-spacing: 0.28em; }
-    .brand__sub { display: none; }
-
-    .stats { top: 16px; right: 16px; gap: 8px; }
-    .stats__row:nth-child(2) { display: none; }
-    .stats__value { font-size: 14px; }
-
-    .controls {
-      top: auto;
-      bottom: 76px;
-      gap: 10px;
-      padding: 6px 10px;
-      max-width: calc(100% - 24px);
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-    .controls::-webkit-scrollbar { display: none; }
-    .controls__label { display: none; }
-    .controls__divider { margin: 2px 0; }
-    .controls button { padding: 7px 11px; font-size: 9.5px; }
-
-    .help-bar { bottom: 16px; padding: 9px 14px; font-size: 9px; gap: 9px; }
-    .help-bar__label { display: none; }
-    .help-bar__rule { display: none; }
-
-    .intro__topbar { padding: 18px 6vw; }
-    .intro__topbar-mid { display: none; }
-    .intro__grid {
-      grid-template-columns: 1fr;
-      gap: 36px;
-      padding: 5vh 6vw 3vh;
-    }
-    .intro__col--stats {
-      grid-template-columns: 1fr 1fr;
-      display: grid;
-      gap: 18px;
-      border-top: none;
-      padding-top: 0;
-    }
-    .intro__stat { padding-bottom: 12px; }
-    .intro__stat-value { font-size: 24px; }
-    .intro__footer {
-      grid-template-columns: 1fr;
-      text-align: center;
-      gap: 18px;
-      padding: 22px 6vw 24px;
-    }
-    .intro__loc, .intro__doc { text-align: center; }
+    font-size: 11px;
+    letter-spacing: 3px;
   }
 </style>
 </head>
 <body>
-  <!-- INTRO / WELCOME OVERLAY (press-kit cover; investors see this first) -->
-  <div id="intro" class="intro">
-    <div class="intro__bg"></div>
-
-    <header class="intro__topbar">
-      <div class="intro__topbar-left">01 / 01 — Facility Tour</div>
-      <div class="intro__topbar-mid">A glimpse inside the work</div>
-      <div class="intro__topbar-right">Investor Preview · 2026</div>
-    </header>
-
-    <div class="intro__grid">
-      <div class="intro__col intro__col--lead">
-        <h1 class="intro__title">
-          <span class="intro__title-mark">TAP</span>
-          <span class="intro__title-italic">Athletes.</span>
-        </h1>
-        <p class="intro__pitch">
-          A pitching academy built around the work,<br>not the showroom.
-        </p>
-        <p class="intro__hint">
-          Drag to orbit · scroll to zoom · or step inside in walk mode
-        </p>
-        <div class="intro__meta">
-          <span>Pitching Academy</span>
-          <span class="intro__meta-sep"></span>
-          <span>Rogers, AR</span>
-          <span class="intro__meta-sep"></span>
-          <span>25 × 80 ft</span>
-        </div>
-      </div>
-
-      <aside class="intro__col intro__col--stats">
-        <div class="intro__stat">
-          <div class="intro__stat-label">Envelope</div>
-          <div class="intro__stat-value">25 <span class="x">×</span> 80 <span>ft</span></div>
-        </div>
-        <div class="intro__stat">
-          <div class="intro__stat-label">Pitching Cage</div>
-          <div class="intro__stat-value">12 <span class="x">×</span> 72 <span>ft</span></div>
-        </div>
-        <div class="intro__stat">
-          <div class="intro__stat-label">Mound Lanes</div>
-          <div class="intro__stat-value">2 <span>regulation</span></div>
-        </div>
-        <div class="intro__stat">
-          <div class="intro__stat-label">Ceiling</div>
-          <div class="intro__stat-value">14 <span>ft commercial</span></div>
-        </div>
-      </aside>
-    </div>
-
-    <footer class="intro__footer">
-      <div class="intro__loc">Training Athletic Performance, Inc. — Rogers, AR</div>
-      <button class="intro__cta" id="intro-cta" type="button">
-        <span>Enter Tour</span>
-        <span class="intro__cta-arrow">→</span>
-      </button>
-      <div class="intro__doc">Private / Investor Preview</div>
-    </footer>
-  </div>
-
-  <!-- 3D scene mounts here -->
   <div id="app"></div>
 
-  <!-- BRAND BLOCK -->
-  <header class="brand">
-    <div class="brand__mark">
-      <span class="brand__mark-text">TAP</span>
-      <span class="brand__mark-dot" aria-hidden="true"></span>
-    </div>
-    <span class="brand__rule" aria-hidden="true"></span>
-    <div class="brand__detail">
-      <div class="brand__name">Athletes</div>
-      <div class="brand__sub">
-        <span>Pitching Academy</span>
-        <span class="brand__sub-rule"></span>
-        <span>Facility Tour</span>
-      </div>
-    </div>
-  </header>
+  <div class="panel" id="mode-panel">
+    <button data-mode="orbit" class="active">Orbit</button>
+    <button data-mode="walk">Walk</button>
+    <div class="divider"></div>
+    <button data-preset="iso">Iso</button>
+    <button data-preset="top">Top</button>
+    <button data-preset="mound">From Mound</button>
+    <button data-preset="plate">From Plate</button>
+    <button data-preset="entry">Entry</button>
+    <div class="divider"></div>
+    <button id="bay-door-toggle">Bay Door</button>
+  </div>
 
-  <!-- STAT BLOCK -->
-  <aside class="stats">
-    <div class="stats__row">
-      <div class="stats__label">Envelope</div>
-      <div class="stats__value">25 <span class="x">×</span> 80 <span class="stats__unit">FT</span></div>
-    </div>
-    <div class="stats__row">
-      <div class="stats__label">Cage</div>
-      <div class="stats__value">12 <span class="x">×</span> 72 <span class="stats__unit">FT</span></div>
-    </div>
-    <div class="stats__row">
-      <div class="stats__label">Camera</div>
-      <div class="stats__value stats__value--mono" id="cam-info">orbit</div>
-    </div>
-  </aside>
+  <div class="hud top-left">
+    <div class="title">TAP ATHLETES</div>
+    <div class="sub">PITCHING ACADEMY · FACILITY 3D</div>
+  </div>
 
-  <!-- CONTROL PANEL -->
-  <nav class="controls" id="mode-panel" aria-label="Camera and scene controls">
-    <div class="controls__group">
-      <div class="controls__label">View</div>
-      <div class="controls__buttons">
-        <button data-mode="orbit" class="active" type="button">Orbit</button>
-        <button data-mode="walk" type="button">Walk</button>
-      </div>
-    </div>
-    <div class="controls__divider"></div>
-    <div class="controls__group">
-      <div class="controls__label">Preset</div>
-      <div class="controls__buttons">
-        <button data-preset="iso" type="button">Iso</button>
-        <button data-preset="top" type="button">Top</button>
-        <button data-preset="mound" type="button">Mound</button>
-        <button data-preset="plate" type="button">Plate</button>
-        <button data-preset="entry" type="button">Entry</button>
-      </div>
-    </div>
-    <div class="controls__divider"></div>
-    <div class="controls__group">
-      <div class="controls__label">Scene</div>
-      <div class="controls__buttons">
-        <button id="bay-door-toggle" type="button">Bay Door</button>
-      </div>
-    </div>
-  </nav>
+  <div class="hud top-right">
+    <div class="mono">25' W × 80' L · CAGE 12' × 72'</div>
+    <div class="mono" id="cam-info" style="margin-top: 6px; opacity: 0.55;">orbit</div>
+  </div>
 
-  <!-- HELP BAR (orbit) -->
-  <footer class="help-bar" id="help-orbit">
-    <span class="help-bar__label">Controls</span>
-    <span class="help-bar__rule"></span>
-    <span><kbd>L</kbd><kbd>DRAG</kbd> rotate</span>
-    <span class="dot"></span>
-    <span><kbd>R</kbd><kbd>DRAG</kbd> pan</span>
-    <span class="dot"></span>
-    <span><kbd>SCROLL</kbd> zoom</span>
-  </footer>
+  <div class="help" id="help-orbit">
+    <kbd>L-DRAG</kbd> rotate · <kbd>R-DRAG</kbd> pan · <kbd>SCROLL</kbd> zoom
+  </div>
+  <div class="help" id="help-walk" style="display:none;">
+    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · <kbd>MOUSE</kbd> look · <kbd>SHIFT</kbd> run · <kbd>ESC</kbd> exit
+  </div>
 
-  <!-- HELP BAR (walk) -->
-  <footer class="help-bar" id="help-walk" style="display:none;">
-    <span class="help-bar__label">Controls</span>
-    <span class="help-bar__rule"></span>
-    <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move</span>
-    <span class="dot"></span>
-    <span><kbd>MOUSE</kbd> look</span>
-    <span class="dot"></span>
-    <span><kbd>SHIFT</kbd> run</span>
-    <span class="dot"></span>
-    <span><kbd>ESC</kbd> exit</span>
-  </footer>
-
-  <!-- WALK-MODE LOCK HINT -->
   <div id="lock-hint">
-    <div class="lock-inner">
-      <div class="lock-eyebrow">Walk Mode</div>
-      <h2>Step inside the facility.</h2>
-      <p>
-        Move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>.
-        Look with the mouse. Hold <kbd>SHIFT</kbd> to run.
-        Press <kbd>ESC</kbd> to return to orbit.
-      </p>
-      <div class="lock-cta">Click to Start</div>
+    <div class="card">
+      <h2>WALK MODE</h2>
+      <p>Click to enter the facility. Use WASD to move, mouse to look around. Press <kbd style="background:#3a4a55;color:#fff;padding:1px 5px;border-radius:2px;font-size:10px;">ESC</kbd> to exit.</p>
+      <div class="cta">CLICK TO START</div>
     </div>
   </div>
 
@@ -2464,21 +1702,6 @@
       requestAnimationFrame(animate);
     }
     animate();
-  </script>
-
-  <script>
-    // Intro overlay dismissal — click the CTA, click the backdrop, or press Escape.
-    (function () {
-      const intro = document.getElementById('intro');
-      const cta   = document.getElementById('intro-cta');
-      if (!intro || !cta) return;
-      const dismiss = () => intro.classList.add('hide');
-      cta.addEventListener('click', dismiss);
-      intro.addEventListener('click', (e) => { if (e.target === intro) dismiss(); });
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !intro.classList.contains('hide')) dismiss();
-      });
-    })();
   </script>
 </body>
 </html>
