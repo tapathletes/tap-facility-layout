@@ -19,5 +19,10 @@ procedural Three.js geometry, the geometry is wrong, not the spec.
 
 ## Files
 
-- [`bathroom-2026-05-09.md`](bathroom-2026-05-09.md) — unisex bathroom
-  (architect-sourced). Two image crops referenced; image files pending.
+- [`as-built-2026-09-22.md`](as-built-2026-09-22.md) — **current source of
+  truth.** Walls-up dimensions from Eugene: 24'-2" × 80', ~17' ceiling,
+  7' × 7' bathroom, 70 × 14 × 12 retractable net, no grate, no concrete
+  pads, no turf. Mirrored in [`../dimensions.js`](../dimensions.js).
+- [`bathroom-2026-05-09.md`](bathroom-2026-05-09.md) — **superseded** by the
+  as-built note (bathroom is now 7' × 7' outside; grate retired). Kept for
+  the architect's fixture callouts.
