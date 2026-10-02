@@ -226,6 +226,7 @@
          - front edge 7' in from the front door, back edge 3' short of the back doors
          - z=0 wall: 2" foam wall padding, then 1 ft gap, then cage net
          - one mound, centered on the net width
+         - black batter's mat (boxes + catcher's tab) around the plate, x ~67.1..76.8
        Right-side strip: z = 15.17..25 (~9.83' wide)
          - bathroom 6'-11 1/2" × 8'-8 1/2" (architect 2026-05-09) at x = 3..9.96, z = 16.29..25
          - mirror wall along z = 24.7, x = 10..40
@@ -888,15 +889,16 @@
     const cageZC = (cageZ1 + cageZ2) / 2; // ~8.17 — single lane centerline
     const cageH = 11;
 
-    // Home plate x. Rubber sits at x=10.5 (mound starts 2 ft inside the front
-    // net), so 60'-6" lands the plate at x=71 with a 6 ft catcher's box to the back net.
+    // Home plate x — the plate's BACK POINT (catcher side). Rubber sits at
+    // x=10.5 (mound starts 2 ft inside the front net), so 60'-6" lands the
+    // point at x=71 with a 6 ft catcher's box to the back net.
     const PLATE_X = 71;
 
     /* Distance markers across the lane — perpendicular to the lane direction.
-       Distance is measured from the BACK POINT of home plate (PLATE_X - 0.85)
+       Distance is measured from the BACK POINT of home plate (PLATE_X)
        backward to where the FRONT EDGE OF THE PITCHING RUBBER would sit. */
     {
-      const platePointX = PLATE_X - 0.85;
+      const platePointX = PLATE_X;
       const distances = [
         { ft: 40,   label: "40'"    },
         { ft: 46,   label: "46'"    },
@@ -1029,17 +1031,57 @@
     mound(cageX1 + 2, cageX1 + 11, cageZC - 2, cageZC + 2);   // 9' × 4', centered, 5 ft clear to each side net
 
     /* ─────────────────────────────────────────────────────────────────
-       HOME PLATE — one, at x=PLATE_X on the lane centerline (z=cageZC),
-       lined up with the mound. Rubber x=10.5 → plate x=71 keeps the
-       rubber-to-plate spacing at 60'-6", with a 6 ft catcher's box behind
-       the plate (x=71 to back net at x=77).
-       Pentagon shape, point facing -x (toward the pitcher).
+       HOME PLATE + BATTER'S MAT — one plate on the lane centerline
+       (z=cageZC), lined up with the mound. Rubber x=10.5 → plate point
+       x=71 keeps the rubber-to-plate spacing at 60'-6", with a 6 ft
+       catcher's box behind the plate (x=71 to back net at x=77).
+       Pentagon shape: flat edge faces the pitcher (-x), point faces the
+       catcher (+x) — flipped 2026-10-01 to match the mat.
     ────────────────────────────────────────────────────────────────── */
     {
-      // Reusable pentagon geometry for home plate
+      /* Batter's mat (2026-10-01) — black turf mat modeled on the one
+         purchased: batter's boxes both sides of the plate, a catcher's tab
+         behind it, white box lines, plate inlaid.
+         Sizes are ASSUMED until the product spec is in specs/:
+           main mat 7' long × 12' wide, centered on the plate
+           catcher's tab 2.75' long × 5' wide (stops just short of the back net)
+           box lines 4" wide: inner pair 6" off the plate, outer pair 4' beyond */
+      {
+        const plateMidX = PLATE_X - 0.425;
+        const MAIN_L = 7, MAIN_W = 12, TAB_L = 2.75, TAB_W = 5;
+        const mainX1 = plateMidX - MAIN_L/2, mainX2 = plateMidX + MAIN_L/2;
+        const tabX2 = mainX2 + TAB_L;
+        const matY = 0.01, matThk = 0.05;   // sits on the PVC / rubber
+        const turfMat = new THREE.MeshStandardMaterial({ color: 0x0c0c0c, roughness: 0.98 });
+        const lineMat = new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: 0.7 });
+
+        const main = new THREE.Mesh(new THREE.BoxGeometry(MAIN_L, matThk, MAIN_W), turfMat);
+        main.position.set(plateMidX, matY + matThk/2, cageZC);
+        main.receiveShadow = true;
+        scene.add(main);
+        const tab = new THREE.Mesh(new THREE.BoxGeometry(TAB_L, matThk, TAB_W), turfMat);
+        tab.position.set(mainX2 + TAB_L/2, matY + matThk/2, cageZC);
+        tab.receiveShadow = true;
+        scene.add(tab);
+
+        const LINE_W = 4/12;
+        const innerOff = 0.71 + 0.5 + LINE_W/2;   // half plate width + 6" gap
+        const outerOff = innerOff + 4;            // 4 ft wide batter's box
+        function boxLine(x1, x2, z) {
+          const m = new THREE.Mesh(new THREE.BoxGeometry(x2 - x1, 0.006, LINE_W), lineMat);
+          m.position.set((x1 + x2)/2, matY + matThk + 0.003, z);
+          scene.add(m);
+        }
+        [-1, 1].forEach(side => {
+          boxLine(mainX1, tabX2, cageZC + side * innerOff);   // inner lines run on through the catcher's tab
+          boxLine(mainX1, mainX2, cageZC + side * outerOff);
+        });
+      }
+
+      // Reusable pentagon geometry for home plate (origin at the back point)
       const shape = new THREE.Shape();
-      shape.moveTo(0, -0.71); shape.lineTo(0, 0.71);
-      shape.lineTo(-0.4, 0.71); shape.lineTo(-0.85, 0); shape.lineTo(-0.4, -0.71);
+      shape.moveTo(-0.85, -0.71); shape.lineTo(-0.85, 0.71);
+      shape.lineTo(-0.45, 0.71); shape.lineTo(0, 0); shape.lineTo(-0.45, -0.71);
       shape.closePath();
       const plateGeom = new THREE.ExtrudeGeometry(shape, { depth: 0.06, bevelEnabled: false });
       const plateMat = new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: 0.4 });
@@ -1121,10 +1163,10 @@
         map: makeCatcherTargetTexture(), side: THREE.DoubleSide,
       });
 
-      // home plate
+      // home plate — inlaid in the batter's mat, top just proud of the turf
       const plate = new THREE.Mesh(plateGeom, plateMat);
       plate.rotation.x = -Math.PI / 2;
-      plate.position.set(PLATE_X, 0.07, cageZC);
+      plate.position.set(PLATE_X, 0.012, cageZC);
       scene.add(plate);
 
       // Catcher target on the back net, centered above the plate
