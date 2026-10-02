@@ -232,7 +232,7 @@
            x = 0..7, z = 18..25 — leaves a ~2'-10" walkway to the net
        Entry zone (x = 0..7, in front of the net):
          - L-shaped front desk + Acer laptop pressed into the front-left corner,
-           x = 0.3..4.3, z = 0.05..4.55 (legs along the glass and the left wall)
+           x = 0.3..4.3, z = 0.05..4.55 (main leg along the glass, return leg facing the door)
          - mirror wall along z = 24.7, x = 10..40
          - classroom nook at x ~41..51: whiteboard + TV on the z=25 wall (centers ~5' up),
            6 chairs in 2 rows of 3 facing the wall
@@ -1491,20 +1491,21 @@
 
     /* ─────────────────────────────────────────────────────────────────
        FRONT DESK — L-shaped, pressed into the front-left corner
-       (x=0.3..4.3, z=0.05..4.55). One leg runs along the front glass, the
-       other along the left wall, so the desk hugs both walls and stays
-       ~2.7 ft clear of the front net (x=7). The seat sits in the elbow
-       facing the glass (-x), toward people coming in; the open side faces
-       the room. Acer laptop on the glass leg. Sizes assumed: 4.5' + 4'
-       legs, 2' deep, 29" high.
+       (x=0.3..4.3, z=0.05..4.55). The main leg runs along the front glass
+       with its end against the left wall; the return leg comes off its
+       door end and faces the opening, meeting people as they walk in.
+       The seat sits inside the L facing the glass (-x); staff walk in
+       from the net side, which stays ~2.7 ft clear (net front at x=7).
+       Acer laptop on the glass leg. Sizes assumed: 4.5' + 4' legs,
+       2' deep, 29" high.
     ────────────────────────────────────────────────────────────────── */
     {
       const DESK_H = 2.42, TOP_T = 0.1, PANEL_T = 0.08;
       const DEPTH = 2;
       const glassX = 0.3, wallZ = 0.05;            // inside of the glass mullions / left wall
-      const legAZ2 = wallZ + 4.5;                  // glass leg: 4.5' along the glass
+      const doorZ = wallZ + 4.5;                   // glass leg: 4.5' along the glass, door end
       const elbowX = glassX + DEPTH;
-      const legBX2 = elbowX + 2;                   // wall leg: 4' along the left wall (incl. the elbow)
+      const retX2 = elbowX + 2;                    // return leg: 4' back from the glass (incl. the elbow)
       const panelMat = new THREE.MeshStandardMaterial({ color: 0x2a3640, roughness: 0.7 });
       const panelH = DESK_H - TOP_T;
 
@@ -1515,15 +1516,15 @@
         scene.add(m);
       }
       // tops
-      slab(DEPTH, TOP_T, legAZ2 - wallZ, glassX + DEPTH/2, DESK_H - TOP_T/2, (wallZ + legAZ2)/2, matWood);
-      slab(legBX2 - elbowX, TOP_T, DEPTH, (elbowX + legBX2)/2, DESK_H - TOP_T/2, wallZ + DEPTH/2, matWood);
-      // back panel along the glass (visible from outside)
-      slab(PANEL_T, panelH, legAZ2 - wallZ, glassX + PANEL_T/2, panelH/2, (wallZ + legAZ2)/2, panelMat);
-      // end panels: door end of the glass leg, net end of the wall leg
-      slab(DEPTH, panelH, PANEL_T, glassX + DEPTH/2, panelH/2, legAZ2 - PANEL_T/2, panelMat);
-      slab(PANEL_T, panelH, DEPTH, legBX2 - PANEL_T/2, panelH/2, wallZ + DEPTH/2, panelMat);
+      slab(DEPTH, TOP_T, doorZ - wallZ, glassX + DEPTH/2, DESK_H - TOP_T/2, (wallZ + doorZ)/2, matWood);
+      slab(retX2 - elbowX, TOP_T, DEPTH, (elbowX + retX2)/2, DESK_H - TOP_T/2, doorZ - DEPTH/2, matWood);
+      // visitor-facing panels: along the glass, and along the door side of both legs
+      slab(PANEL_T, panelH, doorZ - wallZ, glassX + PANEL_T/2, panelH/2, (wallZ + doorZ)/2, panelMat);
+      slab(retX2 - glassX, panelH, PANEL_T, (glassX + retX2)/2, panelH/2, doorZ - PANEL_T/2, panelMat);
+      // end panel: net end of the return leg
+      slab(PANEL_T, panelH, DEPTH, retX2 - PANEL_T/2, panelH/2, doorZ - DEPTH/2, panelMat);
 
-      const seatZ = 3.2;
+      const seatZ = 1.35;
       chair(elbowX + 1.1, seatZ, -Math.PI / 2);   // facing the front glass (-x)
 
       // Acer laptop — open on the glass leg, screen toward the seat
