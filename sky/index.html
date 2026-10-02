@@ -244,7 +244,8 @@
 
     const PAL = {
       floor:    0x141414,  // black rubber border
-      pvc:      0x8a8f94,  // smooth grey PVC field
+      pvc:      0x4a4f55,  // smooth grey PVC field — renders as a medium grey under the bay lights,
+                           // dark enough for the white / sky-blue floor logo to read
       wall:     0xf2efe8,
       ceiling:  0xe8e5dc,
       truss:    0x2a3640,
@@ -877,6 +878,26 @@
       floorLogo.rotation.x = -Math.PI / 2;
       floorLogo.position.set(25, 0.06, 19.1);
       scene.add(floorLogo);
+    }
+
+    // TAP Athletes Pitching Academy logo in the middle of the grey PVC field
+    // (2026-10-01). Artwork is 02_Marketing/Logos "small logo version" with its
+    // flat background cut out. Laid to read upright looking down the building
+    // from the entry / the mound (+x). Centered on the PVC width (z=12.5); along
+    // the length it sits at x=42 rather than the exact middle (x=40) so it lies
+    // between the net posts at x=37 and x=47 instead of under one.
+    {
+      const LOGO_W = 9, LOGO_H = LOGO_W * 321 / 365;   // ft; artwork is 365 × 321 px
+      const tex = new THREE.TextureLoader().load('../assets/brand/tap-athletes-pitching-academy.png');
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 8;
+      const pvcLogo = new THREE.Mesh(
+        new THREE.PlaneGeometry(LOGO_W, LOGO_H),
+        new THREE.MeshBasicMaterial({ map: tex, transparent: true })
+      );
+      pvcLogo.rotation.set(-Math.PI / 2, 0, -Math.PI / 2);   // flat; artwork "up" → +x
+      pvcLogo.position.set(42, 0.03, 12.5);
+      scene.add(pvcLogo);
     }
 
     /* ─────────────────────────────────────────────────────────────────
