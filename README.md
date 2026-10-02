@@ -25,6 +25,15 @@ Archive:
 - [`facility-layout-v1.html`](facility-layout-v1.html) — earlier 2D layout
   (superseded by v2; kept for reference).
 
+## Demos
+
+- [`demos/tapos-demo-video.mp4`](demos/tapos-demo-video.mp4) — TAPOS Sports
+  Management & Performance Software demo video (4:23, 1080p, narrated with
+  captions). Embedded on the landing page under "Demos";
+  `demos/tapos-demo-video-poster.png` is the still shown before play. The
+  video is rendered in the `tap-os` repo (`tools/video/`); copy a new render
+  over this file to update it.
+
 ## Run locally
 
 Any static-file server works. Examples from the project root:
