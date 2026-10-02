@@ -216,6 +216,8 @@
        Pitching net:   x = 7..77, z = 1.17..15.17, y = 0..13   (14' × 70' × 13')
          - front edge 7' in from the front door, back edge 3' short of the back doors
          - z=0 wall: 2" foam wall padding, then 1 ft gap, then cage net
+         - divider net down the centerline (z = 8.17) makes two 7' lanes
+         - tinted windscreen on the front net (x = 7), behind the mound
          - one mound, centered on the net width: black Portolite XL (Oversized), 10'-6" × 5' × 10"
          - black batter's mat (boxes + catcher's tab) around the plate, x ~67.1..76.8
        Right-side strip: z = 15.17..25 (~9.83' wide)
@@ -944,6 +946,27 @@
     scene.add(netPanel(0.05, cageH, cageZ2-cageZ1, cageX2, cageH/2, (cageZ1+cageZ2)/2));
     // Top net
     scene.add(netPanel(cageX2-cageX1, 0.05, cageZ2-cageZ1, (cageX1+cageX2)/2, cageH, (cageZ1+cageZ2)/2));
+
+    // Divider net (2026-10-02): down the centerline, full length and height,
+    // splitting the 14 ft net into two 7 ft lanes. Hung from its own rope.
+    scene.add(netPanel(cageX2-cageX1, cageH, 0.05, (cageX1+cageX2)/2, cageH/2, cageZC));
+    scene.add(rope(new THREE.Vector3(cageX1, cageH, cageZC), new THREE.Vector3(cageX2, cageH, cageZC)));
+
+    // Windscreen (2026-10-02): tinted screen fabric hung on the front net behind
+    // the mound, so the ball leaves the pitcher's hand against a dark background.
+    // Full net width; the 9 ft height is assumed (not measured).
+    {
+      const SCREEN_H = 9;
+      const screen = new THREE.Mesh(
+        new THREE.PlaneGeometry(cageZ2 - cageZ1, SCREEN_H),
+        new THREE.MeshLambertMaterial({
+          color: 0x0e1418, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false,
+        })
+      );
+      screen.rotation.y = Math.PI / 2;
+      screen.position.set(cageX1 + 0.04, SCREEN_H / 2, cageZC);   // just inside the front net
+      scene.add(screen);
+    }
 
     /* ─────────────────────────────────────────────────────────────────
        MOUND — one, at the front of the net, centered on the net width
@@ -1735,9 +1758,10 @@
     const walkPos = new THREE.Vector2();   // x, z
     let yaw = 0, pitch = 0, walkV = 0, turnV = 0;
     function walkHome() {
-      // At the head of the pitching lane, just inside the net, looking at the plate.
-      // (From the door itself the net is 4 ft from your face and fills the screen.)
-      walkPos.set(cageX1 + 0.8, cageZC);
+      // At the head of the gym-side lane, just inside the net, looking down its length.
+      // (From the door itself the net is 4 ft from your face and fills the screen;
+      // on the centerline you would be standing in the divider net.)
+      walkPos.set(cageX1 + 0.8, cageZC + 3.5);
       yaw = -Math.PI / 2;          // -PI/2 looks straight down the length (+x)
       pitch = -0.05;
       walkV = turnV = 0;
