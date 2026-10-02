@@ -216,7 +216,8 @@
        Pitching net:   x = 7..77, z = 1.17..15.17, y = 0..13   (14' × 70' × 13')
          - front edge 7' in from the front door, back edge 3' short of the back doors
          - z=0 wall: 2" foam wall padding, then 1 ft gap, then cage net
-         - divider net down the centerline (z = 8.17) makes two 7' lanes
+         - divider net on the centerline (z = 8.17) makes two 7' lanes; shown pulled
+           back halfway (x = 42..77), clear of the mound
          - tinted windscreen on the front net (x = 7), behind the mound
          - one mound, centered on the net width: black Portolite XL (Oversized), 10'-6" × 5' × 10"
          - black batter's mat (boxes + catcher's tab) around the plate, x ~67.1..76.8
@@ -947,10 +948,21 @@
     // Top net
     scene.add(netPanel(cageX2-cageX1, 0.05, cageZ2-cageZ1, (cageX1+cageX2)/2, cageH, (cageZ1+cageZ2)/2));
 
-    // Divider net (2026-10-02): down the centerline, full length and height,
-    // splitting the 14 ft net into two 7 ft lanes. Hung from its own rope.
-    scene.add(netPanel(cageX2-cageX1, cageH, 0.05, (cageX1+cageX2)/2, cageH/2, cageZC));
-    scene.add(rope(new THREE.Vector3(cageX1, cageH, cageZC), new THREE.Vector3(cageX2, cageH, cageZC)));
+    // Divider net (2026-10-02): on the centerline, splitting the 14 ft net into
+    // two 7 ft lanes. It slides on its own full-length rope and is shown pulled
+    // back halfway toward the plate end, clear of the mound: the whole 70 ft net
+    // gathered into the back 35 ft, so its mesh is squeezed to half width.
+    {
+      const DIVIDER_OPEN = 0.5;   // share of the lane the divider covers (1 = fully drawn)
+      const len = cageX2 - cageX1;
+      const divider = netPanel(len, cageH, 0.05, cageX2 - len * DIVIDER_OPEN / 2, cageH/2, cageZC);
+      divider.scale.x = DIVIDER_OPEN;
+      scene.add(divider);
+      scene.add(rope(new THREE.Vector3(cageX1, cageH, cageZC), new THREE.Vector3(cageX2, cageH, cageZC)));
+      // rope down the divider's free edge
+      const edgeX = cageX2 - len * DIVIDER_OPEN;
+      scene.add(rope(new THREE.Vector3(edgeX, 0, cageZC), new THREE.Vector3(edgeX, cageH, cageZC), 0.04));
+    }
 
     // Windscreen (2026-10-02): tinted screen fabric hung on the front net behind
     // the mound, so the ball leaves the pitcher's hand against a dark background.
@@ -1760,7 +1772,7 @@
     function walkHome() {
       // At the head of the gym-side lane, just inside the net, looking down its length.
       // (From the door itself the net is 4 ft from your face and fills the screen;
-      // on the centerline you would be standing in the divider net.)
+      // on the centerline, walking straight ahead runs you into the divider net.)
       walkPos.set(cageX1 + 0.8, cageZC + 3.5);
       yaw = -Math.PI / 2;          // -PI/2 looks straight down the length (+x)
       pitch = -0.05;
