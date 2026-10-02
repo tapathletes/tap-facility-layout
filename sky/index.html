@@ -222,8 +222,8 @@
            doors (x = 70..80), 4' along each long wall (z = 0..4, z = 21..25)
          - smooth grey PVC: x = 10..70, z = 4..21
          - no turf, no concrete pads
-       Pitching net:   x = 10..80, z = 1.17..15.17, y = 0..11   (14' × 70' × 11')
-         - front edge starts where the front-door rubber stops (x = 10)
+       Pitching net:   x = 7..77, z = 1.17..15.17, y = 0..11   (14' × 70' × 11')
+         - front edge 7' in from the front door, back edge 3' short of the back doors
          - z=0 wall: 2" foam wall padding, then 1 ft gap, then cage net
          - one mound, centered on the net width
        Right-side strip: z = 15.17..25 (~9.83' wide)
@@ -875,22 +875,22 @@
     }
 
     /* ─────────────────────────────────────────────────────────────────
-       PITCHING NET — 14' × 70' × 11' (x=10..80, z=1.17..15.17, h=11)
-       Front edge starts where the front-door rubber stops (x=10); at 70 ft
-       long the back edge lands on the back wall (x=80).
+       PITCHING NET — 14' × 70' × 11' (x=7..77, z=1.17..15.17, h=11)
+       Front edge 7 ft in from the front door; back edge 3 ft short of the
+       back doors (matches specs/as-built-2026-09-22.md).
        Cage net offset from z=0 wall by 2" pad thickness + 1 ft buffer.
     ────────────────────────────────────────────────────────────────── */
 
-    const cageX1 = RUBBER_END, cageX2 = cageX1 + 70;
+    const cageX1 = 7, cageX2 = cageX1 + 70;
     const PAD_THK = 2/12, PAD_GAP = 1;
     const cageZ1 = PAD_THK + PAD_GAP;     // ~1.17
     const cageZ2 = cageZ1 + 14;           // ~15.17 (14 ft net width)
     const cageZC = (cageZ1 + cageZ2) / 2; // ~8.17 — single lane centerline
     const cageH = 11;
 
-    // Home plate x. Keeps the rubber (x=13.5) → plate spacing the model had
-    // before the net moved (60'-6"), leaving a 6 ft catcher's box to the back net.
-    const PLATE_X = 74;
+    // Home plate x. Rubber sits at x=10.5 (mound starts 2 ft inside the front
+    // net), so 60'-6" lands the plate at x=71 with a 6 ft catcher's box to the back net.
+    const PLATE_X = 71;
 
     /* Distance markers across the lane — perpendicular to the lane direction.
        Distance is measured from the BACK POINT of home plate (PLATE_X - 0.85)
@@ -1012,7 +1012,7 @@
     /* ─────────────────────────────────────────────────────────────────
        MOUND — one, at the front of the net, centered on the net width
        9' × 4' × 10" tall. Long axis along x (toward back of cage).
-       x=12..21 (2 ft inside the front net), z=cageZC-2..cageZC+2  (~6.17..10.17)
+       x=9..18 (2 ft inside the front net), z=cageZC-2..cageZC+2  (~6.17..10.17)
     ────────────────────────────────────────────────────────────────── */
     // Portable mound spec 2026-05-09: 9' × 4' × 10" tall.
     function mound(x1, x2, z1, z2) {
@@ -1030,9 +1030,9 @@
 
     /* ─────────────────────────────────────────────────────────────────
        HOME PLATE — one, at x=PLATE_X on the lane centerline (z=cageZC),
-       lined up with the mound. Rubber x=13.5 → plate x=74 keeps the
+       lined up with the mound. Rubber x=10.5 → plate x=71 keeps the
        rubber-to-plate spacing at 60'-6", with a 6 ft catcher's box behind
-       the plate (x=74 to back net at x=80).
+       the plate (x=71 to back net at x=77).
        Pentagon shape, point facing -x (toward the pitcher).
     ────────────────────────────────────────────────────────────────── */
     {
@@ -1129,7 +1129,7 @@
 
       // Catcher target on the back net, centered above the plate
       const tgt = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), tgtMat);
-      tgt.position.set(cageX2 - 0.6, 3.7, cageZC); // just proud of the bay-door tracks
+      tgt.position.set(cageX2 - 0.05, 3.7, cageZC);
       tgt.rotation.y = -Math.PI / 2;
       scene.add(tgt);
     }
@@ -1593,13 +1593,13 @@
       } else if (preset === 'mound') {
         setMode('walk');
         // standing on the mound, looking at home plate
-        walkCam.position.set(20, 5.6, cageZC);
-        walkCam.lookAt(78, 4.5, cageZC);
+        walkCam.position.set(17, 5.6, cageZC);
+        walkCam.lookAt(75, 4.5, cageZC);
       } else if (preset === 'plate') {
         setMode('walk');
         // behind home plate, looking back at the mound
-        walkCam.position.set(78, 5.6, cageZC);
-        walkCam.lookAt(13, 4.5, cageZC);
+        walkCam.position.set(75, 5.6, cageZC);
+        walkCam.lookAt(10, 4.5, cageZC);
       } else if (preset === 'entry') {
         setMode('walk');
         walkCam.position.set(1.5, 5.6, 15.5);
