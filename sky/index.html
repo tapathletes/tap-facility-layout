@@ -225,7 +225,7 @@
        Pitching net:   x = 7..77, z = 1.17..15.17, y = 0..11   (14' × 70' × 11')
          - front edge 7' in from the front door, back edge 3' short of the back doors
          - z=0 wall: 2" foam wall padding, then 1 ft gap, then cage net
-         - one mound, centered on the net width
+         - one mound, centered on the net width: black Portolite XL (Oversized), 10'-6" × 5' × 10"
          - black batter's mat (boxes + catcher's tab) around the plate, x ~67.1..76.8
        Right-side strip: z = 15.17..25 (~9.83' wide)
          - bathroom 7' × 7' outside footprint (as-built 2026-09-22) flush in the front corner,
@@ -249,7 +249,7 @@
       ceiling:  0xe8e5dc,
       truss:    0x2a3640,
       mound:    0x0a0a0a,  // black mound
-      moundTop: 0x141414,
+      moundTop: 0x0c0c0c,  // black turf
       rubber:   0xfafafa,
       net:      0x0a0a0a,
       mirror:   0xc8dde8,
@@ -363,7 +363,7 @@
       side: THREE.DoubleSide, depthWrite: false,
     });
     const matFrame = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.55, metalness: 0.4 });
-    const matMoundTop = new THREE.MeshStandardMaterial({ color: PAL.moundTop, roughness: 0.7 });
+    const matMoundTop = new THREE.MeshStandardMaterial({ color: PAL.moundTop, roughness: 0.95 });
     const matRubber = new THREE.MeshStandardMaterial({ color: PAL.rubber, roughness: 0.5 });
     const matBathWall = new THREE.MeshStandardMaterial({ color: PAL.bathWall, roughness: 0.85, side: THREE.DoubleSide });
     const matMirrorFrame = new THREE.MeshStandardMaterial({ color: PAL.mirrorFrame, roughness: 0.55, metalness: 0.5 });
@@ -963,22 +963,33 @@
 
     /* ─────────────────────────────────────────────────────────────────
        MOUND — one, at the front of the net, centered on the net width
-       9' × 4' × 10" tall. Long axis along x (toward back of cage).
-       x=9..18 (2 ft inside the front net), z=cageZC-2..cageZC+2  (~6.17..10.17)
+       Portolite XL (Oversized) practice mound in black: 10'-6" L × 5' W ×
+       10" H. Long axis along x (toward back of cage).
+       x=9..19.5 (2 ft inside the front net), z=cageZC-2.5..cageZC+2.5  (~5.67..10.67)
     ────────────────────────────────────────────────────────────────── */
-    // Portable mound spec 2026-05-09: 9' × 4' × 10" tall.
+    // Portolite Oversized practice mound (2026-10-01): 10"H × 10'-6"L × 5'W, black turf.
+    // Profile: level table at the back carrying the rubber, then a straight
+    // slope down to a low lip at the front. Table length is assumed (2.5 ft).
     function mound(x1, x2, z1, z2) {
       const w = x2 - x1, d = z2 - z1, h = 10/12; // 10 inches
-      const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), matMoundTop);
-      body.position.set((x1+x2)/2, h/2, (z1+z2)/2);
-      body.castShadow = true;
+      const table = 2.5, lip = 0.06;
+      const profile = new THREE.Shape();
+      profile.moveTo(0, 0); profile.lineTo(w, 0); profile.lineTo(w, lip);
+      profile.lineTo(table, h); profile.lineTo(0, h);
+      profile.closePath();
+      const body = new THREE.Mesh(
+        new THREE.ExtrudeGeometry(profile, { depth: d, bevelEnabled: false }),
+        matMoundTop
+      );
+      body.position.set(x1, 0, z1);
+      body.castShadow = true; body.receiveShadow = true;
       scene.add(body);
-      // Pitching rubber on top, ~1.5 ft from the back. Pitcher strides forward (+x).
+      // Pitching rubber on the table, ~1.5 ft from the back. Pitcher strides forward (+x).
       const rubber = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 2), matRubber);
       rubber.position.set(x1 + 1.5, h + 0.04, (z1+z2)/2);
       scene.add(rubber);
     }
-    mound(cageX1 + 2, cageX1 + 11, cageZC - 2, cageZC + 2);   // 9' × 4', centered, 5 ft clear to each side net
+    mound(cageX1 + 2, cageX1 + 12.5, cageZC - 2.5, cageZC + 2.5);   // 10'-6" × 5', centered, 4.5 ft clear to each side net
 
     /* ─────────────────────────────────────────────────────────────────
        HOME PLATE + BATTER'S MAT — one plate on the lane centerline
