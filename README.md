@@ -11,9 +11,11 @@ purchase orders, not just to impress.
 
 Active:
 
-- [`sky/`](sky/) — Three.js walkthrough, sky-blue turf
+- [`sky/`](sky/) — Three.js walkthrough: black rubber border around a grey
+  PVC field, 14' × 70' net, one mound, classroom nook
   (served at `facility.tapathletes.com/sky/`).
 - [`facility-3d.html`](facility-3d.html) — Three.js walkthrough, black turf.
+  Earlier layout; not updated with the sky variant's 2026-10-01 changes.
 
 Archive:
 

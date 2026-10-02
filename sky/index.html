@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>TAP Athletes — Facility 3D (Sky Blue Turf)</title>
+<title>TAP Athletes — Facility 3D (Sky)</title>
 <style>
   :root {
     --slate: #3a4a55;
@@ -176,7 +176,7 @@
   </div>
 
   <div class="hud top-right">
-    <div class="mono">25' W × 80' L · CAGE 12' × 72'</div>
+    <div class="mono">25' W × 80' L · NET 14' × 70'</div>
     <div class="mono" id="cam-info" style="margin-top: 6px; opacity: 0.55;">orbit</div>
   </div>
 
@@ -217,29 +217,32 @@
          x: 0 .. 80  (length, FRONT wall to BACK wall)
          z: 0 .. 25  (width, LEFT wall to RIGHT wall)
          y: 0 .. 14  (height, floor to ceiling)
-       Concrete pads:  x = 0..3 (front entry) and x = 77..80 (back exit)
-       Pitching cage:  x = 5..77, z = 1.17..13.17, y = 0..11   (12' × 72' × 11')
-         - 2' walking strip in front of cage (x = 3..5)
-         - back of cage flush with back concrete pad
+       Flooring (2026-10-01): black rubber border around a grey PVC field.
+         - rubber: 10' deep at the front door (x = 0..10) and at the back
+           doors (x = 70..80), 4' along each long wall (z = 0..4, z = 21..25)
+         - smooth grey PVC: x = 10..70, z = 4..21
+         - no turf, no concrete pads
+       Pitching net:   x = 10..80, z = 1.17..15.17, y = 0..11   (14' × 70' × 11')
+         - front edge starts where the front-door rubber stops (x = 10)
          - z=0 wall: 2" foam wall padding, then 1 ft gap, then cage net
-       Right-side strip: z = 13.17..25 (~11.83' wide)
+         - one mound, centered on the net width
+       Right-side strip: z = 15.17..25 (~9.83' wide)
          - bathroom 6'-11 1/2" × 8'-8 1/2" (architect 2026-05-09) at x = 3..9.96, z = 16.29..25
          - mirror wall along z = 24.7, x = 10..40
-         - med ball rack at x ~43..49, z = 22.9..24.5 (dumbbell-rack .glb + procedural med balls)
+         - classroom nook at x ~41..51: whiteboard + TV on the z=25 wall (centers ~5' up),
+           6 chairs in 2 rows of 3 facing the wall
          - kettlebell rack at x = 52..60, z = 22..24.5 (.glb kettlebells on primitive base)
-         - weight rack at x = 64..69.15, z = 20.95..24.4 (2-post quarter rack against z=25 wall, blue, 6.73' tall)
+         - med ball rack at x ~63.8..69.4, z = 22.9..24.5 (dumbbell-rack .glb + procedural med balls)
          - dumbbell rack at x ~71..76.6, z = 22.9..24.5 (dumbbell-rack .glb)
        Door: on front wall (x = 0), span z = 7.375..10.375 (per architect: 7'-4 1/2" from z=0 edge)
     ────────────────────────────────────────────────────────────────── */
 
     const PAL = {
-      floor:    0x141414,
-      concrete: 0xb9b6ad,
+      floor:    0x141414,  // black rubber border
+      pvc:      0x8a8f94,  // smooth grey PVC field
       wall:     0xf2efe8,
       ceiling:  0xe8e5dc,
       truss:    0x2a3640,
-      turf:     0x3d6f8c,  // sky-blue turf
-      turfStripe: 0x2a5470,  // deeper-blue mowing stripe
       mound:    0x0a0a0a,  // black mound
       moundTop: 0x141414,
       rubber:   0xfafafa,
@@ -347,10 +350,9 @@
 
     // ── Materials ─────────────────────────────────────────────────────
     const matFloor = new THREE.MeshStandardMaterial({ color: PAL.floor, roughness: 0.75, metalness: 0.05 });
-    const matConcrete = new THREE.MeshStandardMaterial({ color: PAL.concrete, roughness: 0.92 });
-    const matWall = new THREE.MeshStandardMaterial({ color: PAL.wall, roughness: 0.85, side: THREE.DoubleSide });
+    const matPvc = new THREE.MeshStandardMaterial({ color: PAL.pvc, roughness: 0.6, metalness: 0.0 });
+    const matWall =new THREE.MeshStandardMaterial({ color: PAL.wall, roughness: 0.85, side: THREE.DoubleSide });
     const matCeiling = new THREE.MeshStandardMaterial({ color: PAL.ceiling, roughness: 0.9, side: THREE.DoubleSide });
-    const matTurf = new THREE.MeshStandardMaterial({ color: PAL.turf, roughness: 0.95 });
     const matNet = new THREE.MeshStandardMaterial({
       color: 0x6a6a6a, roughness: 0.6, transparent: true, opacity: 0.14,
       side: THREE.DoubleSide, depthWrite: false,
@@ -369,24 +371,24 @@
        BUILDING SHELL (long axis = x)
     ────────────────────────────────────────────────────────────────── */
 
-    // Concrete pad - front (x = 0..3)
+    // Flooring (2026-10-01): a grey PVC field boxed in by black rubber.
+    // Rubber runs 10 ft in from the front door, 10 ft in from the back doors,
+    // and 4 ft in from each long wall.
+    const RUBBER_END = 10, RUBBER_SIDE = 4;
+    // Black rubber — full slab (x = 0..80); shows as the border around the PVC
     {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(3, 0.05, 25), matConcrete);
-      m.position.set(1.5, -0.025, 12.5);
-      m.receiveShadow = true;
-      scene.add(m);
-    }
-    // Concrete pad - back (x = 77..80)
-    {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(3, 0.05, 25), matConcrete);
-      m.position.set(78.5, -0.025, 12.5);
-      m.receiveShadow = true;
-      scene.add(m);
-    }
-    // Rubber interior floor (x = 3..77)
-    {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(74, 0.05, 25), matFloor);
+      const m = new THREE.Mesh(new THREE.BoxGeometry(80, 0.05, 25), matFloor);
       m.position.set(40, -0.025, 12.5);
+      m.receiveShadow = true;
+      scene.add(m);
+    }
+    // Smooth grey PVC field (x = 10..70, z = 4..21), laid just proud of the rubber
+    {
+      const m = new THREE.Mesh(
+        new THREE.BoxGeometry(80 - RUBBER_END*2, 0.02, 25 - RUBBER_SIDE*2),
+        matPvc
+      );
+      m.position.set(40, 0, 12.5);
       m.receiveShadow = true;
       scene.add(m);
     }
@@ -859,7 +861,8 @@
       scene.add(decal);
     });
 
-    // Floor circle decal on rubber flooring (mobility/right-strip area)
+    // Floor circle decal in the right-strip area (straddles the PVC / rubber edge).
+    // z=19.1 keeps the painted circle clear of the 14' net (z=15.17).
     {
       const tex = makeCircleLogoTexture();
       const floorLogo = new THREE.Mesh(
@@ -867,35 +870,33 @@
         new THREE.MeshBasicMaterial({ map: tex, transparent: true })
       );
       floorLogo.rotation.x = -Math.PI / 2;
-      floorLogo.position.set(25, 0.06, 19);
+      floorLogo.position.set(25, 0.06, 19.1);
       scene.add(floorLogo);
     }
 
     /* ─────────────────────────────────────────────────────────────────
-       PITCHING CAGE — 12' × 72' × 11' (x=5..77, z=1.17..13.17, h=11)
+       PITCHING NET — 14' × 70' × 11' (x=10..80, z=1.17..15.17, h=11)
+       Front edge starts where the front-door rubber stops (x=10); at 70 ft
+       long the back edge lands on the back wall (x=80).
        Cage net offset from z=0 wall by 2" pad thickness + 1 ft buffer.
     ────────────────────────────────────────────────────────────────── */
 
-    const cageX1 = 5, cageX2 = 77;
+    const cageX1 = RUBBER_END, cageX2 = cageX1 + 70;
     const PAD_THK = 2/12, PAD_GAP = 1;
     const cageZ1 = PAD_THK + PAD_GAP;     // ~1.17
-    const cageZ2 = cageZ1 + 12;           // ~13.17 (12 ft cage width)
+    const cageZ2 = cageZ1 + 14;           // ~15.17 (14 ft net width)
+    const cageZC = (cageZ1 + cageZ2) / 2; // ~8.17 — single lane centerline
     const cageH = 11;
 
-    // Turf base
+    // Home plate x. Keeps the rubber (x=13.5) → plate spacing the model had
+    // before the net moved (60'-6"), leaving a 6 ft catcher's box to the back net.
+    const PLATE_X = 74;
+
+    /* Distance markers across the lane — perpendicular to the lane direction.
+       Distance is measured from the BACK POINT of home plate (PLATE_X - 0.85)
+       backward to where the FRONT EDGE OF THE PITCHING RUBBER would sit. */
     {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(cageX2-cageX1, 0.06, cageZ2-cageZ1), matTurf);
-      m.position.set((cageX1+cageX2)/2, 0.03, (cageZ1+cageZ2)/2);
-      m.receiveShadow = true;
-      scene.add(m);
-    }
-    /* Distance markers across the turf — perpendicular to the lane direction.
-       Distance is measured from the BACK POINT of home plate (world x ≈ 68.15)
-       backward to where the FRONT EDGE OF THE PITCHING RUBBER would sit.
-       Plate moved from x=73 → x=69 on 2026-05-09, so back point: 73-0.85=72.15
-       became 69-0.85=68.15. */
-    {
-      const platePointX = 68.15;
+      const platePointX = PLATE_X - 0.85;
       const distances = [
         { ft: 40,   label: "40'"    },
         { ft: 46,   label: "46'"    },
@@ -927,12 +928,12 @@
           new THREE.BoxGeometry(0.15, 0.005, cageZ2 - cageZ1),
           lineMat
         );
-        line.position.set(x, 0.064, (cageZ1 + cageZ2) / 2);
+        line.position.set(x, 0.064, cageZC);
         scene.add(line);
 
-        // labels — one in each lane, painted on the turf so a pitcher reads them
-        // correctly when looking +x toward home plate
-        [5, 11].forEach(zCenter => {
+        // labels — one each side of the lane, painted on the floor so a pitcher
+        // reads them correctly when looking +x toward home plate
+        [cageZC - 3.5, cageZC + 3.5].forEach(zCenter => {
           const labelMat = new THREE.MeshBasicMaterial({
             map: makeDistanceLabel(d.label),
             transparent: true,
@@ -945,9 +946,9 @@
       });
     }
 
-    // Net cage frame: vertical posts every 9 ft along x (8 posts each side spans 72 ft)
+    // Net cage frame: vertical posts every 10 ft along x (8 posts each side spans 70 ft)
     const FRAME_T = 0.2;
-    for (let x = cageX1; x <= cageX2 + 0.001; x += 9) {
+    for (let x = cageX1; x <= cageX2 + 0.001; x += 10) {
       [cageZ1, cageZ2].forEach(z => {
         const post = new THREE.Mesh(
           new THREE.BoxGeometry(FRAME_T, cageH, FRAME_T),
@@ -1009,10 +1010,9 @@
     scene.add(netPanel(cageX2-cageX1, 0.05, cageZ2-cageZ1, (cageX1+cageX2)/2, cageH, (cageZ1+cageZ2)/2));
 
     /* ─────────────────────────────────────────────────────────────────
-       MOUNDS — at front of cage
-       Each 9' × 4' × 10" tall. Long axis along x (toward back of cage).
-       Mound A: x=7..16, z=cageZ1+1..cageZ1+5  (~2.17..6.17)
-       Mound B: x=7..16, z=cageZ2-6..cageZ2-2  (~7.17..11.17) — 1ft gap from Mound A
+       MOUND — one, at the front of the net, centered on the net width
+       9' × 4' × 10" tall. Long axis along x (toward back of cage).
+       x=12..21 (2 ft inside the front net), z=cageZC-2..cageZC+2  (~6.17..10.17)
     ────────────────────────────────────────────────────────────────── */
     // Portable mound spec 2026-05-09: 9' × 4' × 10" tall.
     function mound(x1, x2, z1, z2) {
@@ -1026,16 +1026,13 @@
       rubber.position.set(x1 + 1.5, h + 0.04, (z1+z2)/2);
       scene.add(rubber);
     }
-    mound(7, 16, cageZ1+1, cageZ1+5);   // Mound A — 9' × 4', 1ft margin from wall-side net
-    mound(7, 16, cageZ2-6, cageZ2-2);   // Mound B — 9' × 4', 1ft gap to Mound A, 2ft margin from gym-side net
+    mound(cageX1 + 2, cageX1 + 11, cageZC - 2, cageZC + 2);   // 9' × 4', centered, 5 ft clear to each side net
 
     /* ─────────────────────────────────────────────────────────────────
-       HOME PLATES — one per mound, each at x=69 lined up with its mound.
-       Plate moved from x=73 to x=69 (2026-05-09) to give an 8 ft catcher's
-       box behind the plate (x=69 to back net at x=77). This also lands
-       rubber-to-plate at regulation 60'-6" (rubber x=8.5 → plate x=69).
-         Plate A at z=cageZ1+3  (lined up with Mound A, z=cageZ1+1..cageZ1+5)
-         Plate B at z=cageZ2-4  (lined up with Mound B, z=cageZ2-6..cageZ2-2)
+       HOME PLATE — one, at x=PLATE_X on the lane centerline (z=cageZC),
+       lined up with the mound. Rubber x=13.5 → plate x=74 keeps the
+       rubber-to-plate spacing at 60'-6", with a 6 ft catcher's box behind
+       the plate (x=74 to back net at x=80).
        Pentagon shape, point facing -x (toward the pitcher).
     ────────────────────────────────────────────────────────────────── */
     {
@@ -1124,19 +1121,17 @@
         map: makeCatcherTargetTexture(), side: THREE.DoubleSide,
       });
 
-      [cageZ1+3, cageZ2-4].forEach(z => {
-        // home plate
-        const plate = new THREE.Mesh(plateGeom, plateMat);
-        plate.rotation.x = -Math.PI / 2;
-        plate.position.set(69, 0.07, z);
-        scene.add(plate);
+      // home plate
+      const plate = new THREE.Mesh(plateGeom, plateMat);
+      plate.rotation.x = -Math.PI / 2;
+      plate.position.set(PLATE_X, 0.07, cageZC);
+      scene.add(plate);
 
-        // Catcher target on back net (x=77), centered above the plate
-        const tgt = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), tgtMat);
-        tgt.position.set(76.95, 3.7, z);
-        tgt.rotation.y = -Math.PI / 2;
-        scene.add(tgt);
-      });
+      // Catcher target on the back net, centered above the plate
+      const tgt = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), tgtMat);
+      tgt.position.set(cageX2 - 0.6, 3.7, cageZC); // just proud of the bay-door tracks
+      tgt.rotation.y = -Math.PI / 2;
+      scene.add(tgt);
     }
 
     /* ─────────────────────────────────────────────────────────────────
@@ -1312,109 +1307,83 @@
     }
 
     /* ─────────────────────────────────────────────────────────────────
-       WEIGHT RACK / 2-POST QUARTER RACK — against the mirror-side wall
-       Spec 2026-05-09: 41.34" × 61.81" × 80.71"  (3.45 × 5.15 × 6.73 ft)
-       Posts span x=64..69.15 (5.15' apart) at z=24.4 (against z=25 wall).
-       Stabilizer feet extend forward to z=20.95 (3.45' deep footprint).
-       Metal is blue so the rack reads against the dark turf.
+       CLASSROOM NOOK — against the mirror-side wall (z=25), x ~41..51
+       Sits where the med ball rack used to be (the rack moved back to the
+       old barbell-rack spot). Whiteboard + TV on the wall, centers ~5 ft
+       off the floor; 6 chairs in 2 rows of 3 facing the wall.
     ────────────────────────────────────────────────────────────────── */
     {
-      const wrx1 = 64, wrx2 = wrx1 + 5.15;     // post separation along x
-      const wrzBack = 24.4;                      // post z (against the wall)
-      const wrzFront = wrzBack - 3.45;           // forward edge of base feet
-      const wrh  = 6.73;
-      const postT = 0.28;
+      const WALL_Z = 25;        // interior face of the mirror-side wall
+      const MOUNT_Y = 5;        // board + TV center height
+      const trimMat = new THREE.MeshStandardMaterial({ color: 0xb4b9be, roughness: 0.4, metalness: 0.7 });
 
-      // Blue rack metal (visible against the dark turf)
-      const rackMat = new THREE.MeshStandardMaterial({
-        color: 0x2563eb, roughness: 0.45, metalness: 0.65,
-      });
-      const accentMat = new THREE.MeshStandardMaterial({
-        color: 0xc23a2e, roughness: 0.5, metalness: 0.4,
-      });
-      const barMat = new THREE.MeshStandardMaterial({
-        color: 0x8a8a8a, roughness: 0.35, metalness: 0.75,
-      });
-
-      // 2 vertical posts at the wall side
-      const postGeom = new THREE.BoxGeometry(postT, wrh, postT);
-      [wrx1, wrx2].forEach(x => {
-        const post = new THREE.Mesh(postGeom, rackMat);
-        post.position.set(x, wrh / 2, wrzBack);
-        post.castShadow = true;
-        scene.add(post);
-      });
-
-      // Top stabilizer cross-bar between the 2 posts
-      const topGeom = new THREE.BoxGeometry(wrx2 - wrx1, postT, postT);
-      const topBar = new THREE.Mesh(topGeom, rackMat);
-      topBar.position.set((wrx1 + wrx2) / 2, wrh - postT / 2, wrzBack);
-      scene.add(topBar);
-
-      // Stabilizer feet — flat horizontal base extending forward from each post
-      const footGeom = new THREE.BoxGeometry(postT, 0.18, wrzBack - wrzFront);
-      [wrx1, wrx2].forEach(x => {
-        const foot = new THREE.Mesh(footGeom, rackMat);
-        foot.position.set(x, 0.09, (wrzBack + wrzFront) / 2);
-        foot.castShadow = true;
-        scene.add(foot);
-      });
-
-      // Cross-tie connecting the front of the two feet (visual stability)
-      const tieGeom = new THREE.BoxGeometry(wrx2 - wrx1, 0.18, postT);
-      const tie = new THREE.Mesh(tieGeom, rackMat);
-      tie.position.set((wrx1 + wrx2) / 2, 0.09, wrzFront + postT / 2);
-      scene.add(tie);
-
-      // J-hooks at chest height (~y=4.2), sticking forward (-z) off the posts
-      const hookY = 4.2;
-      const hookDepth = 0.4;
-      const hookGeom = new THREE.BoxGeometry(0.45, 0.28, hookDepth);
-      [wrx1, wrx2].forEach(x => {
-        const hook = new THREE.Mesh(hookGeom, accentMat);
-        hook.position.set(x, hookY, wrzBack - hookDepth / 2 - postT / 2);
-        scene.add(hook);
-      });
-
-      // Safety arms at squat depth (~y=2.8), shorter than j-hooks
-      const safetyY = 2.8;
-      const safetyDepth = 0.32;
-      const safetyGeom = new THREE.BoxGeometry(0.38, 0.18, safetyDepth);
-      [wrx1, wrx2].forEach(x => {
-        const safety = new THREE.Mesh(safetyGeom, accentMat);
-        safety.position.set(x, safetyY, wrzBack - safetyDepth / 2 - postT / 2);
-        scene.add(safety);
-      });
-
-      // Olympic bar resting on j-hooks (7 ft, ~1 ft overhang each side)
-      const barLen = 7;
-      const barZ = wrzBack - hookDepth - postT / 2;
-      const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, barLen, 12), barMat);
-      bar.rotation.z = Math.PI / 2;
-      bar.position.set((wrx1 + wrx2) / 2, hookY + 0.08, barZ);
-      bar.castShadow = true;
-      scene.add(bar);
-
-      // Plates loaded near each end (just outside the posts)
-      const plateMat = new THREE.MeshStandardMaterial({ color: 0xc23a2e, roughness: 0.5 });
-      const plateGeom = new THREE.CylinderGeometry(0.55, 0.55, 0.18, 18);
-      const halfRack = (wrx2 - wrx1) / 2;
-      for (const dx of [-halfRack - 0.25, halfRack + 0.25]) {
-        const plate = new THREE.Mesh(plateGeom, plateMat);
-        plate.rotation.z = Math.PI / 2;
-        plate.position.set((wrx1 + wrx2) / 2 + dx, hookY + 0.08, barZ);
-        plate.castShadow = true;
-        scene.add(plate);
+      // Whiteboard — 6' × 4', x=41..47
+      {
+        const wbX = 44, wbW = 6, wbH = 4;
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(wbW + 0.2, wbH + 0.2, 0.06), trimMat);
+        frame.position.set(wbX, MOUNT_Y, WALL_Z - 0.03);
+        scene.add(frame);
+        const board = new THREE.Mesh(
+          new THREE.BoxGeometry(wbW, wbH, 0.04),
+          // slight emissive so the board reads white against the off-white wall
+          new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25, metalness: 0.0, emissive: 0xffffff, emissiveIntensity: 0.45 })
+        );
+        board.position.set(wbX, MOUNT_Y, WALL_Z - 0.07);
+        scene.add(board);
+        // marker tray along the bottom edge
+        const tray = new THREE.Mesh(new THREE.BoxGeometry(wbW - 1, 0.06, 0.25), trimMat);
+        tray.position.set(wbX, MOUNT_Y - wbH/2 - 0.08, WALL_Z - 0.16);
+        scene.add(tray);
       }
+
+      // TV — 55" class (4' × 2.25' screen), x=47.5..51.5
+      {
+        const tvX = 49.5, tvW = 4, tvH = 2.25;
+        const bezel = new THREE.Mesh(
+          new THREE.BoxGeometry(tvW + 0.12, tvH + 0.12, 0.14),
+          new THREE.MeshStandardMaterial({ color: 0x0c0d0f, roughness: 0.5, metalness: 0.3 })
+        );
+        bezel.position.set(tvX, MOUNT_Y, WALL_Z - 0.1);
+        bezel.castShadow = true;
+        scene.add(bezel);
+        const screen = new THREE.Mesh(
+          new THREE.BoxGeometry(tvW, tvH, 0.02),
+          new THREE.MeshStandardMaterial({ color: 0x10161d, roughness: 0.12, metalness: 0.5 })
+        );
+        screen.position.set(tvX, MOUNT_Y, WALL_Z - 0.18);
+        scene.add(screen);
+      }
+
+      // Chairs — 6 total, 2 rows of 3, facing the wall (+z)
+      function chair(x, z) {
+        const seatH = 1.5, seatW = 1.5, seatD = 1.4;
+        const seat = new THREE.Mesh(new THREE.BoxGeometry(seatW, 0.1, seatD), matMat);
+        seat.position.set(x, seatH, z);
+        seat.castShadow = true;
+        scene.add(seat);
+        const back = new THREE.Mesh(new THREE.BoxGeometry(seatW, 1.3, 0.1), matMat);
+        back.position.set(x, seatH + 0.85, z - seatD/2 + 0.05);
+        back.castShadow = true;
+        scene.add(back);
+        const legGeom = new THREE.BoxGeometry(0.08, seatH, 0.08);
+        [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
+          const leg = new THREE.Mesh(legGeom, matMetal);
+          leg.position.set(x + sx * (seatW/2 - 0.08), seatH/2, z + sz * (seatD/2 - 0.08));
+          scene.add(leg);
+        });
+      }
+      [20.3, 17.6].forEach(z => {          // front row ~4.7 ft off the wall, back row behind it
+        [43.8, 46.0, 48.2].forEach(x => chair(x, z));
+      });
     }
 
     /* ─────────────────────────────────────────────────────────────────
        DUMBBELL RACK + MED BALL RACK (CC BY 4.0 by MH, via Sketchfab)
        Two instances of the same .gltf:
-         - Rack #1: dumbbells visible (default).      mirror-wall side
-         - Rack #2: dumbbells hidden, med balls on it. cage-net side
+         - Rack #1: dumbbells visible (default).       x ~71..76.6
+         - Rack #2: dumbbells hidden, med balls on it. x ~63.8..69.4
        Real model dims: 170 × 50 × 85 cm (5.58 × 1.64 × 2.79 ft).
-       Both at x=71..76.6 (along the back end of the gym strip).
+       Both against the mirror-side wall at the back end of the gym strip.
     ────────────────────────────────────────────────────────────────── */
     function makeMedBallTexture(topColor) {
       const c = document.createElement('canvas');
@@ -1503,12 +1472,12 @@
         return worldBbox;
       }
 
-      // Rack #1 — with dumbbells, against the mirror wall just past the squat rack
+      // Rack #1 — with dumbbells, against the mirror wall just past the med ball rack
       placeRack({ x: 73.8, z: 23.7, hideDumbbells: false });
 
-      // Rack #2 — med balls instead of dumbbells. Replaces the old primitive
-      // plyo-ball rack at x=42..50, so centered at x=46 along the mirror wall.
-      const r2bbox = placeRack({ x: 46, z: 23.7, hideDumbbells: true });
+      // Rack #2 — med balls instead of dumbbells. Moved 2026-10-01 from x=46 into
+      // the old barbell-rack spot (x=64..69.15) to free the wall for the classroom nook.
+      const r2bbox = placeRack({ x: 66.6, z: 23.7, hideDumbbells: true });
 
       // Med balls on Rack #2 — two rows (top: lighter/smaller, bottom: heavier/bigger)
       const medBallColors = ['#e8c84a', '#4a8acd', '#5fb959', '#a96cd4', '#cd4a4a']; // yellow/blue/green/purple/red
@@ -1623,14 +1592,14 @@
         orbit.target.set(40, 0, 12.5);
       } else if (preset === 'mound') {
         setMode('walk');
-        // standing on Mound A, looking at its home plate (Plate A at z=5)
-        walkCam.position.set(15, 5.6, 5);
-        walkCam.lookAt(73, 4.5, 5);
+        // standing on the mound, looking at home plate
+        walkCam.position.set(20, 5.6, cageZC);
+        walkCam.lookAt(78, 4.5, cageZC);
       } else if (preset === 'plate') {
         setMode('walk');
-        // behind home plate A (z=5), looking back at Mound A
-        walkCam.position.set(75, 5.6, 5);
-        walkCam.lookAt(8, 4.5, 5);
+        // behind home plate, looking back at the mound
+        walkCam.position.set(78, 5.6, cageZC);
+        walkCam.lookAt(13, 4.5, cageZC);
       } else if (preset === 'entry') {
         setMode('walk');
         walkCam.position.set(1.5, 5.6, 15.5);
