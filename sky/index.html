@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <title>TAP Athletes — Facility 3D (Sky)</title>
 <style>
   :root {
@@ -110,47 +111,50 @@
     margin: 0 2px;
   }
 
-  #lock-hint {
-    position: fixed; inset: 0;
-    display: none;
-    align-items: center; justify-content: center;
-    background: rgba(8, 12, 18, 0.78);
-    backdrop-filter: blur(4px);
-    z-index: 20;
-    cursor: pointer;
-    pointer-events: auto;
+  /* On-screen arrows — same job as the keyboard arrow keys; press and hold */
+  .pad {
+    position: fixed;
+    right: 20px; bottom: 20px;
+    display: grid;
+    grid-template-areas: ". fwd ." "left back right";
+    gap: 6px;
+    z-index: 10;
+    user-select: none; -webkit-user-select: none;
+    -webkit-touch-callout: none;
   }
-  #lock-hint.show { display: flex; }
-  #lock-hint .card {
-    background: #1a232b;
+  .pad button {
+    width: 52px; height: 52px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(20, 28, 36, 0.78);
+    backdrop-filter: blur(8px);
     border: 1px solid rgba(184, 212, 224, 0.3);
     border-radius: 8px;
-    padding: 28px 36px;
-    text-align: center;
-    max-width: 360px;
-  }
-  #lock-hint .card h2 {
-    font-size: 18px;
-    font-weight: 800;
-    letter-spacing: 2px;
-    color: #fff;
-    margin-bottom: 8px;
-  }
-  #lock-hint .card p {
-    font-size: 12px;
-    letter-spacing: 1px;
     color: #b8d4e0;
-    margin-bottom: 16px;
-    line-height: 1.5;
+    cursor: pointer;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
   }
-  #lock-hint .card .cta {
-    background: #b8d4e0;
-    color: #1a232b;
-    padding: 10px 20px;
-    border-radius: 4px;
-    font-weight: 700;
-    font-size: 11px;
-    letter-spacing: 3px;
+  .pad button svg { width: 22px; height: 22px; pointer-events: none; }
+  .pad button.down { background: #3a4a55; color: #fff; border-color: rgba(184, 212, 224, 0.6); }
+  .pad [data-dir="fwd"]   { grid-area: fwd; }
+  .pad [data-dir="left"]  { grid-area: left; }
+  .pad [data-dir="back"]  { grid-area: back; }
+  .pad [data-dir="right"] { grid-area: right; }
+
+  #app canvas { cursor: grab; }
+  #app canvas.dragging { cursor: grabbing; }
+
+  /* Phones and narrow windows */
+  @media (max-width: 900px) {
+    .hud.top-left { top: 10px; left: 12px; }
+    .hud .title { font-size: 14px; }
+    .hud .sub { font-size: 9px; letter-spacing: 2px; }
+    .hud.top-right { display: none; }
+    .panel { top: 52px; }
+    .panel button { padding: 10px 12px; letter-spacing: 1.5px; white-space: nowrap; }
+    .pad { right: 50%; transform: translateX(50%); bottom: 18px; }
+    .pad button { width: 58px; height: 58px; }
+    .help { bottom: 156px; white-space: nowrap; font-size: 10px; letter-spacing: 1px; padding: 8px 12px; }
   }
 </style>
 </head>
@@ -158,14 +162,8 @@
   <div id="app"></div>
 
   <div class="panel" id="mode-panel">
-    <button data-mode="orbit" class="active">Orbit</button>
-    <button data-mode="walk">Walk</button>
-    <div class="divider"></div>
-    <button data-preset="iso">Iso</button>
-    <button data-preset="top">Top</button>
-    <button data-preset="mound">From Mound</button>
-    <button data-preset="plate">From Plate</button>
-    <button data-preset="entry">Entry</button>
+    <button data-mode="overview" class="active">Overview</button>
+    <button data-mode="walk">Walk Inside</button>
     <div class="divider"></div>
     <button id="bay-door-toggle">Bay Door</button>
   </div>
@@ -177,22 +175,16 @@
 
   <div class="hud top-right">
     <div class="mono">25' W × 80' L · NET 14' × 70'</div>
-    <div class="mono" id="cam-info" style="margin-top: 6px; opacity: 0.55;">orbit</div>
+    <div class="mono" id="cam-info" style="margin-top: 6px; opacity: 0.55;">overview</div>
   </div>
 
-  <div class="help" id="help-orbit">
-    <kbd>L-DRAG</kbd> rotate · <kbd>R-DRAG</kbd> pan · <kbd>SCROLL</kbd> zoom
-  </div>
-  <div class="help" id="help-walk" style="display:none;">
-    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · <kbd>MOUSE</kbd> look · <kbd>SHIFT</kbd> run · <kbd>ESC</kbd> exit
-  </div>
+  <div class="help" id="help"></div>
 
-  <div id="lock-hint">
-    <div class="card">
-      <h2>WALK MODE</h2>
-      <p>Click to enter the facility. Use WASD to move, mouse to look around. Press <kbd style="background:#3a4a55;color:#fff;padding:1px 5px;border-radius:2px;font-size:10px;">ESC</kbd> to exit.</p>
-      <div class="cta">CLICK TO START</div>
-    </div>
+  <div class="pad" id="pad">
+    <button data-dir="fwd" aria-label="Forward"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15l7-7 7 7"/></svg></button>
+    <button data-dir="left" aria-label="Left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button data-dir="back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 7 7-7"/></svg></button>
+    <button data-dir="right" aria-label="Right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
   </div>
 
   <script type="importmap">
@@ -207,7 +199,6 @@
   <script type="module">
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-    import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
     import { Reflector } from 'three/addons/objects/Reflector.js';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -269,10 +260,13 @@
     // ── Renderer / scene / cameras ───────────────────────────────────
     const app = document.getElementById('app');
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));  // capped to keep laptops and phones smooth
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // Almost nothing in the scene moves, so the shadow map is redrawn only when
+    // something changes (see shadowFrames in the controls section), not every frame.
+    renderer.shadowMap.autoUpdate = false;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     app.appendChild(renderer.domElement);
@@ -315,9 +309,9 @@
     orbitCam.position.set(-35, 28, 55);
     orbitCam.lookAt(40, 4, 12.5);
 
+    // Position and heading are set by the walk controls (see CONTROLS).
     const walkCam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.05, 300);
-    walkCam.position.set(1.5, 5.6, 15.5); // standing just inside the front door
-    walkCam.lookAt(40, 5.6, 12.5);
+    walkCam.rotation.order = 'YXZ';
 
     // ── Lighting ──────────────────────────────────────────────────────
     // Ambient kept low because scene.environment (PMREM) provides diffuse fill.
@@ -599,12 +593,13 @@
        OUTDOOR ENVIRONMENT — parking lot in front of the building (x < 0)
     ────────────────────────────────────────────────────────────────── */
     {
-      // Ground plane far beyond the parking lot, simple grass/concrete fade
+      // Ground plane far beyond the parking lot, simple grass/concrete fade.
+      // Big enough that its edge is lost in the fog from every overview angle.
       const ground = new THREE.Mesh(
-        new THREE.BoxGeometry(300, 0.02, 300),
+        new THREE.BoxGeometry(1400, 0.02, 1400),
         new THREE.MeshStandardMaterial({ color: 0x86927a, roughness: 0.95 })
       );
-      ground.position.set(-50, -0.06, 12.5);
+      ground.position.set(40, -0.06, 12.5);
       ground.receiveShadow = true;
       scene.add(ground);
 
@@ -1208,13 +1203,13 @@
 
       // Real-time reflective mirror — renders the scene from a mirrored camera
       // each frame and projects it onto the surface. Reflects the gym in front.
-      // textureWidth/Height match the viewport for a sharp, undimmed reflection.
-      // One reflector spans all three panels (each reflector is a full extra
-      // render pass); the seams between panels are drawn over it.
+      // textureWidth/Height match the viewport (not the device pixel ratio — the
+      // reflection is a full extra render pass, so this keeps it affordable).
+      // One reflector spans all three panels; the seams between panels are drawn over it.
       const mirror = new Reflector(new THREE.PlaneGeometry(MIRROR_W, MIRROR_H), {
         clipBias: 0.003,
-        textureWidth:  Math.round(window.innerWidth  * window.devicePixelRatio),
-        textureHeight: Math.round(window.innerHeight * window.devicePixelRatio),
+        textureWidth:  window.innerWidth,
+        textureHeight: window.innerHeight,
         color: 0xffffff, // no tint — let the reflected scene's own colors come through
       });
       mirror.position.set(mirrorX, mirrorY, 24.88); // just proud of the wall, as a mounted mirror sits
@@ -1610,103 +1605,241 @@
     }
 
     /* ─────────────────────────────────────────────────────────────────
-       CONTROLS — orbit + walk
+       CONTROLS — two views, both driven the same way:
+         arrow keys (or W A S D), the on-screen arrows, or drag / swipe.
+       Overview:    looking in from outside. Left / right spins the building,
+                    up / down zooms. The roof and whichever wall is between
+                    the camera and the room are hidden so you can see inside.
+       Walk Inside: at eye level. Up / down walks, left / right turns,
+                    drag or swipe looks around. No mouse capture, no ESC.
     ────────────────────────────────────────────────────────────────── */
 
-    let mode = 'orbit';
+    let mode = 'overview';
     let activeCam = orbitCam;
+    const canvas = renderer.domElement;
+    const portrait = () => window.innerWidth < window.innerHeight;
 
-    const orbit = new OrbitControls(orbitCam, renderer.domElement);
-    orbit.target.set(40, 4, 12.5);
-    orbit.enableDamping = true;
-    orbit.dampingFactor = 0.08;
-    orbit.maxPolarAngle = Math.PI * 0.49;
-    orbit.minDistance = 5;
-    orbit.maxDistance = 250;
-    orbit.update();
+    // Shadows are redrawn only for a few frames after something changes.
+    let shadowFrames = 60;
+    THREE.DefaultLoadingManager.onLoad = () => { shadowFrames = 10; };  // models / textures arrived
 
-    const walk = new PointerLockControls(walkCam, document.body);
-    scene.add(walk.getObject());
-
-    const keys = { w:false, a:false, s:false, d:false, shift:false };
-    const velocity = new THREE.Vector3();
-    const direction = new THREE.Vector3();
-    const PLAYER_HEIGHT = 5.6;
-
-    document.addEventListener('keydown', (e) => {
-      if (mode !== 'walk') return;
-      if (e.code === 'KeyW') keys.w = true;
-      if (e.code === 'KeyA') keys.a = true;
-      if (e.code === 'KeyS') keys.s = true;
-      if (e.code === 'KeyD') keys.d = true;
-      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') keys.shift = true;
-    });
-    document.addEventListener('keyup', (e) => {
-      if (e.code === 'KeyW') keys.w = false;
-      if (e.code === 'KeyA') keys.a = false;
-      if (e.code === 'KeyS') keys.s = false;
-      if (e.code === 'KeyD') keys.d = false;
-      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') keys.shift = false;
-    });
-
-    const lockHint = document.getElementById('lock-hint');
-    let lockSupported = !!document.body.requestPointerLock;
-    lockHint.addEventListener('click', () => {
-      if (!lockSupported) return;
-      try { walk.lock(); } catch (_) { lockSupported = false; }
-    });
-    walk.addEventListener('lock', () => lockHint.classList.remove('show'));
-    walk.addEventListener('unlock', () => { if (mode === 'walk') lockHint.classList.add('show'); });
-
-    function setMode(newMode) {
-      mode = newMode;
-      activeCam = (mode === 'walk') ? walkCam : orbitCam;
-      document.querySelectorAll('#mode-panel button[data-mode]').forEach(b => {
-        b.classList.toggle('active', b.dataset.mode === mode);
-      });
-      document.getElementById('help-orbit').style.display = (mode === 'orbit') ? '' : 'none';
-      document.getElementById('help-walk').style.display = (mode === 'walk') ? '' : 'none';
-      if (mode === 'walk') {
-        lockHint.classList.add('show');
-      } else {
-        lockHint.classList.remove('show');
-        if (walk.isLocked) walk.unlock();
-      }
-      document.getElementById('cam-info').textContent = mode;
+    // ── Input: keyboard + on-screen arrows feed the same four directions ──
+    const DIRS = ['fwd', 'back', 'left', 'right'];
+    const keyDown = { fwd: false, back: false, left: false, right: false };
+    const padDown = { fwd: false, back: false, left: false, right: false };
+    let fast = false;
+    const on = (dir) => keyDown[dir] || padDown[dir];
+    const KEY_DIR = {
+      ArrowUp: 'fwd', ArrowDown: 'back', ArrowLeft: 'left', ArrowRight: 'right',
+      KeyW: 'fwd', KeyS: 'back', KeyA: 'left', KeyD: 'right',
+    };
+    const padButtons = {};
+    document.querySelectorAll('#pad button').forEach(b => { padButtons[b.dataset.dir] = b; });
+    function refreshPad() {
+      DIRS.forEach(d => padButtons[d].classList.toggle('down', on(d)));
+    }
+    function releaseAll() {
+      DIRS.forEach(d => { keyDown[d] = false; padDown[d] = false; });
+      fast = false;
+      refreshPad();
     }
 
-    function setPreset(preset) {
-      if (preset === 'iso') {
-        setMode('orbit');
-        orbitCam.position.set(-35, 28, 55);
-        orbit.target.set(40, 4, 12.5);
-      } else if (preset === 'top') {
-        setMode('orbit');
-        orbitCam.position.set(40, 100, 12.501);
-        orbit.target.set(40, 0, 12.5);
-      } else if (preset === 'mound') {
-        setMode('walk');
-        // standing on the mound, looking at home plate
-        walkCam.position.set(17, 5.6, cageZC);
-        walkCam.lookAt(75, 4.5, cageZC);
-      } else if (preset === 'plate') {
-        setMode('walk');
-        // behind home plate, looking back at the mound
-        walkCam.position.set(75, 5.6, cageZC);
-        walkCam.lookAt(10, 4.5, cageZC);
-      } else if (preset === 'entry') {
-        setMode('walk');
-        walkCam.position.set(1.5, 5.6, 15.5);
-        walkCam.lookAt(40, 5.6, 12.5);
-      }
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') fast = true;
+      const dir = KEY_DIR[e.code];
+      if (!dir || e.ctrlKey || e.metaKey || e.altKey) return;
+      e.preventDefault();
+      keyDown[dir] = true;
+      refreshPad();
+    });
+    document.addEventListener('keyup', (e) => {
+      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') fast = false;
+      const dir = KEY_DIR[e.code];
+      if (!dir) return;
+      keyDown[dir] = false;
+      refreshPad();
+    });
+    window.addEventListener('blur', releaseAll);   // no stuck keys after switching windows
+
+    DIRS.forEach(dir => {
+      const b = padButtons[dir];
+      const set = (v) => { padDown[dir] = v; refreshPad(); };
+      b.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        b.setPointerCapture(e.pointerId);
+        set(true);
+      });
+      ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => b.addEventListener(t, () => set(false)));
+      b.addEventListener('contextmenu', (e) => e.preventDefault());   // long-press on a phone
+    });
+
+    // ── Overview: orbit around the building ──
+    const orbit = new OrbitControls(orbitCam, canvas);
+    orbit.target.set(40, 4, 12.5);
+    orbit.enableDamping = true;
+    orbit.dampingFactor = 0.2;      // settles quickly — the view stays under the finger
+    orbit.enablePan = false;        // the building can't be dragged off screen
+    orbit.rotateSpeed = 0.8;
+    orbit.zoomSpeed = 0.8;
+    orbit.maxPolarAngle = Math.PI * 0.4;   // never lower than ~18° above the ground
+    orbit.minDistance = 12;
+    orbit.maxDistance = 170;
+
+    function overviewHome() {
+      // Wide screens: from the front-right corner. Tall phone screens: from
+      // above the front door, looking down the length of the building.
+      // Squarer windows back the camera off so the whole building stays in frame.
+      const aspect = window.innerWidth / window.innerHeight;
+      orbit.target.set(40, 4, 12.5);
+      if (portrait()) orbitCam.position.set(-52, 62, 30);
+      else orbitCam.position.set(-75, 24, 42.5).multiplyScalar(Math.max(1, 1.7 / aspect)).add(orbit.target);
       orbit.update();
     }
 
-    document.querySelectorAll('#mode-panel button').forEach(b => {
-      b.addEventListener('click', () => {
-        if (b.dataset.mode) setMode(b.dataset.mode);
-        if (b.dataset.preset) setPreset(b.dataset.preset);
+    const SPIN_RATE = 1.0;   // rad/s with left / right held
+    const ZOOM_RATE = 0.9;   // e-folds/s with up / down held
+    let spinV = 0, zoomV = 0;
+    const orbitOffset = new THREE.Vector3();
+    const orbitSph = new THREE.Spherical();
+    function updateOverview(dt) {
+      const ease = Math.min(1, 10 * dt);
+      const boost = fast ? 2 : 1;
+      spinV += ((Number(on('right')) - Number(on('left'))) * SPIN_RATE * boost - spinV) * ease;
+      zoomV += ((Number(on('fwd')) - Number(on('back'))) * ZOOM_RATE * boost - zoomV) * ease;
+      if (Math.abs(spinV) > 1e-4 || Math.abs(zoomV) > 1e-4) {
+        orbitOffset.copy(orbitCam.position).sub(orbit.target);
+        orbitSph.setFromVector3(orbitOffset);
+        orbitSph.theta += spinV * dt;
+        orbitSph.radius *= Math.exp(-zoomV * dt);
+        orbitOffset.setFromSpherical(orbitSph);
+        orbitCam.position.copy(orbit.target).add(orbitOffset);
+      }
+      orbit.update();   // also clamps the zoom distance
+    }
+
+    // ── Walk Inside ──
+    const EYE_H = 5.6;
+    const WALK_SPEED = 8, RUN_SPEED = 16;   // ft/s
+    const TURN_RATE = 1.4;                  // rad/s
+    const MAX_PITCH = 1.0;                  // how far you can look up / down
+    const BODY = 0.6;                       // shoulder room kept from walls and solid things
+    // Solid things you can't walk through: [x1, x2, z1, z2]. The net is not one
+    // of them — you walk through it the way you'd lift it and step in.
+    const BLOCKS = [
+      [0, 7, 18, 25],          // bathroom
+      [0.3, 4.3, 0.05, 4.55],  // front desk
+    ];
+    const blocked = (x, z) => BLOCKS.some(([x1, x2, z1, z2]) =>
+      x > x1 - BODY && x < x2 + BODY && z > z1 - BODY && z < z2 + BODY);
+
+    const walkPos = new THREE.Vector2();   // x, z
+    let yaw = 0, pitch = 0, walkV = 0, turnV = 0;
+    function walkHome() {
+      // At the head of the pitching lane, just inside the net, looking at the plate.
+      // (From the door itself the net is 4 ft from your face and fills the screen.)
+      walkPos.set(cageX1 + 0.8, cageZC);
+      yaw = -Math.PI / 2;          // -PI/2 looks straight down the length (+x)
+      pitch = -0.05;
+      walkV = turnV = 0;
+    }
+    function updateWalk(dt) {
+      const ease = Math.min(1, 10 * dt);
+      const speed = fast ? RUN_SPEED : WALK_SPEED;
+      walkV += ((Number(on('fwd')) - Number(on('back'))) * speed - walkV) * ease;
+      turnV += ((Number(on('left')) - Number(on('right'))) * TURN_RATE - turnV) * ease;
+      yaw += turnV * dt;
+      const dx = -Math.sin(yaw) * walkV * dt;
+      const dz = -Math.cos(yaw) * walkV * dt;
+      // one axis at a time, so you slide along a wall instead of sticking to it
+      const nx = Math.max(BODY, Math.min(80 - BODY, walkPos.x + dx));
+      if (!blocked(nx, walkPos.y)) walkPos.x = nx;
+      const nz = Math.max(BODY, Math.min(25 - BODY, walkPos.y + dz));
+      if (!blocked(walkPos.x, nz)) walkPos.y = nz;
+      walkCam.position.set(walkPos.x, EYE_H, walkPos.y);
+      walkCam.rotation.set(pitch, yaw, 0);
+    }
+
+    // Drag (mouse / trackpad) or swipe (finger) to look around. The scene
+    // follows the pointer, like dragging a photo.
+    let dragId = null, dragX = 0, dragY = 0;
+    canvas.addEventListener('pointerdown', (e) => {
+      canvas.classList.add('dragging');
+      if (mode !== 'walk' || dragId !== null) return;
+      dragId = e.pointerId; dragX = e.clientX; dragY = e.clientY;
+      canvas.setPointerCapture(e.pointerId);
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (e.pointerId !== dragId) return;
+      const perPx = THREE.MathUtils.degToRad(walkCam.fov) / window.innerHeight;
+      yaw += (e.clientX - dragX) * perPx;
+      pitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, pitch + (e.clientY - dragY) * perPx));
+      dragX = e.clientX; dragY = e.clientY;
+    });
+    ['pointerup', 'pointercancel'].forEach(t => canvas.addEventListener(t, (e) => {
+      canvas.classList.remove('dragging');
+      if (e.pointerId === dragId) dragId = null;
+    }));
+
+    // ── Cutaway: in the overview, hide the roof and the walls the camera is behind ──
+    const shell = { roof: [], left: [], right: [], back: [] };
+    {
+      const box = new THREE.Box3();
+      scene.children.forEach(o => {
+        if (o.isLight || o.isCamera) return;
+        box.setFromObject(o);
+        if (box.isEmpty()) return;
+        // only things on the building itself, not the parking lot
+        if (box.min.x < -1 || box.max.x > 81.5 || box.min.z < -1 || box.max.z > 26.5) return;
+        if (box.min.y > 13.05) shell.roof.push(o);        // ceiling, trusses, light housings
+        else if (box.max.z < 0.5) shell.left.push(o);     // z=0 wall + what hangs on it
+        else if (box.min.z > 24.4) shell.right.push(o);   // z=25 wall, mirrors, whiteboard, TV
+        else if (box.min.x > 79) shell.back.push(o);      // back wall + both doors
       });
+    }
+    const shellShown = { roof: true, left: true, right: true, back: true };
+    function updateCutaway() {
+      const over = mode === 'overview';
+      const want = {
+        roof:  !over,
+        left:  !(over && orbitCam.position.z < 0),
+        right: !(over && orbitCam.position.z > 25),
+        back:  !(over && orbitCam.position.x > 80),
+      };
+      for (const side in want) {
+        if (want[side] === shellShown[side]) continue;
+        shellShown[side] = want[side];
+        shell[side].forEach(o => { o.visible = want[side]; });
+        shadowFrames = 2;
+      }
+    }
+
+    // ── Mode switch + on-screen hint ──
+    const coarse = window.matchMedia('(pointer: coarse)').matches;   // finger, not mouse
+    const HELP = coarse ? {
+      overview: 'Swipe to spin · pinch to zoom',
+      walk: 'Hold the arrows to walk · swipe to look',
+    } : {
+      overview: '<kbd>←</kbd><kbd>→</kbd> spin · <kbd>↑</kbd><kbd>↓</kbd> zoom · or drag',
+      walk: '<kbd>↑</kbd><kbd>↓</kbd> walk · <kbd>←</kbd><kbd>→</kbd> turn · drag to look around',
+    };
+
+    function setMode(newMode) {
+      // Pressing the button for the view you're already in takes you back to its start.
+      if (newMode === mode) { if (mode === 'walk') walkHome(); else overviewHome(); }
+      mode = newMode;
+      activeCam = (mode === 'walk') ? walkCam : orbitCam;
+      orbit.enabled = (mode === 'overview');
+      dragId = null;
+      spinV = zoomV = walkV = turnV = 0;
+      document.querySelectorAll('#mode-panel button[data-mode]').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === mode);
+      });
+      document.getElementById('help').innerHTML = HELP[mode];
+      document.getElementById('cam-info').textContent = mode;
+    }
+
+    document.querySelectorAll('#mode-panel button[data-mode]').forEach(b => {
+      b.addEventListener('click', () => { setMode(b.dataset.mode); b.blur(); });
     });
 
     // Bay door toggle
@@ -1714,54 +1847,56 @@
     bayDoorBtn.addEventListener('click', () => {
       bayDoorOpen = !bayDoorOpen;
       bayDoorBtn.classList.toggle('active', bayDoorOpen);
+      bayDoorBtn.blur();
     });
 
-    const clock = new THREE.Clock();
-    function updateWalk(dt) {
-      if (!walk.isLocked) return;
-      const speed = (keys.shift ? 18 : 9);
-      direction.z = Number(keys.w) - Number(keys.s);
-      direction.x = Number(keys.d) - Number(keys.a);
-      direction.normalize();
-
-      velocity.x -= velocity.x * 10 * dt;
-      velocity.z -= velocity.z * 10 * dt;
-
-      if (keys.w || keys.s) velocity.z -= direction.z * speed * 8 * dt;
-      if (keys.a || keys.d) velocity.x -= direction.x * speed * 8 * dt;
-
-      walk.moveRight(-velocity.x * dt);
-      walk.moveForward(-velocity.z * dt);
-
-      const obj = walk.getObject();
-      obj.position.x = Math.max(0.5, Math.min(79.5, obj.position.x));
-      obj.position.z = Math.max(0.5, Math.min(24.5, obj.position.z));
-      obj.position.y = PLAYER_HEIGHT;
-    }
-
-    window.addEventListener('resize', () => {
-      const w = window.innerWidth, h = window.innerHeight;
+    function fitCameras() {
+      const w = window.innerWidth, h = window.innerHeight, aspect = w / h;
       renderer.setSize(w, h);
-      orbitCam.aspect = w / h; orbitCam.updateProjectionMatrix();
-      walkCam.aspect = w / h; walkCam.updateProjectionMatrix();
+      // The field of view is set top-to-bottom, so on a tall phone screen it is
+      // widened to keep a usable left-to-right view.
+      const sideToSide = THREE.MathUtils.degToRad(65);
+      walkCam.fov = aspect >= 1 ? 75
+        : Math.min(100, THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(sideToSide / 2) / aspect)));
+      orbitCam.fov = aspect >= 1 ? 38 : 50;
+      orbitCam.aspect = aspect; orbitCam.updateProjectionMatrix();
+      walkCam.aspect = aspect; walkCam.updateProjectionMatrix();
+    }
+    let wasPortrait = portrait();
+    window.addEventListener('resize', () => {
+      fitCameras();
+      // phone turned: re-frame the overview for the new shape
+      if (portrait() !== wasPortrait) { wasPortrait = portrait(); overviewHome(); }
     });
 
-    function animate() {
-      const dt = Math.min(clock.getDelta(), 0.05);
+    fitCameras();
+    overviewHome();
+    walkHome();
+    setMode('overview');
+
+    function frame(dt) {
       if (mode === 'walk') updateWalk(dt);
-      else orbit.update();
+      else updateOverview(dt);
+      updateCutaway();
 
       // Bay door roll-up animation: scale.y compresses the panel toward the
       // top of the opening; position.y shifts so the top stays pinned at ROLL_H.
       if (bayDoorGroup) {
         const target = bayDoorOpen ? 0 : 1;
+        if (Math.abs(target - bayDoorState) > 0.001) shadowFrames = 2;
         bayDoorState += (target - bayDoorState) * 0.08;
         const s = Math.max(bayDoorState, 0.01);
         bayDoorGroup.scale.y = s;
         bayDoorGroup.position.y = (2 - s) * bayDoorRollH / 2;
       }
 
+      if (shadowFrames > 0) { renderer.shadowMap.needsUpdate = true; shadowFrames--; }
       renderer.render(scene, activeCam);
+    }
+
+    const clock = new THREE.Clock();
+    function animate() {
+      frame(Math.min(clock.getDelta(), 0.05));
       requestAnimationFrame(animate);
     }
     animate();
