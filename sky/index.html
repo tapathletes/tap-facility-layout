@@ -246,8 +246,9 @@
 
     const PAL = {
       floor:    0x141414,  // black rubber border
-      pvc:      0x4a4f55,  // smooth grey PVC field — renders as a medium grey under the bay lights,
-                           // dark enough for the white / sky-blue floor logo to read
+      pvc:      0xc4c8cd,  // smooth grey PVC field. The material is diffuse-only (Lambert), so this
+                           // light value renders as a medium grey — dark enough for the white /
+                           // sky-blue floor logo to read
       wall:     0xf2efe8,
       ceiling:  0xe8e5dc,
       truss:    0x2a3640,
@@ -358,11 +359,13 @@
 
     // ── Materials ─────────────────────────────────────────────────────
     const matFloor = new THREE.MeshStandardMaterial({ color: PAL.floor, roughness: 0.75, metalness: 0.05 });
-    const matPvc = new THREE.MeshStandardMaterial({ color: PAL.pvc, roughness: 0.6, metalness: 0.0 });
+    // Lambert, not Standard: no specular or environment reflection, so the whole
+    // PVC field reads as one flat grey from every viewing angle.
+    const matPvc = new THREE.MeshLambertMaterial({ color: PAL.pvc });
     const matWall =new THREE.MeshStandardMaterial({ color: PAL.wall, roughness: 0.85, side: THREE.DoubleSide });
     const matCeiling = new THREE.MeshStandardMaterial({ color: PAL.ceiling, roughness: 0.9, side: THREE.DoubleSide });
     const matNet = new THREE.MeshStandardMaterial({
-      color: 0x6a6a6a, roughness: 0.6, transparent: true, opacity: 0.14,
+      color: 0x6a6a6a, roughness: 0.6, transparent: true, opacity: 0.06,  // faint, so the floor under the net matches the floor outside it
       side: THREE.DoubleSide, depthWrite: false,
     });
     const matFrame = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.55, metalness: 0.4 });
@@ -412,7 +415,14 @@
     }
     // Long walls (running along x)
     scene.add(wall(80 + WALL_T*2, WALL_H, WALL_T, 40, WALL_H/2, -WALL_T/2));      // left long wall (z=0)
-    scene.add(wall(80 + WALL_T*2, WALL_H, WALL_T, 40, WALL_H/2, 25 + WALL_T/2));  // right long wall (z=25)
+    {
+      // right long wall (z=25). It faces the sun, and the ceiling casts no shadow,
+      // so its shadow used to fall as an 8 ft band along the gym strip and split
+      // the grey floor into two shades. No shadow from this wall keeps it even.
+      const rightWall = wall(80 + WALL_T*2, WALL_H, WALL_T, 40, WALL_H/2, 25 + WALL_T/2);
+      rightWall.castShadow = false;
+      scene.add(rightWall);
+    }
     // Bay door state — outer scope so the click handler + animate loop can reach it
     let bayDoorGroup, bayDoorRollH;
     let bayDoorOpen = false;
@@ -749,67 +759,6 @@
       return tex;
     }
 
-    // Circle floor decal — TAP diamond + home plate inside a ring on a brand panel
-    function makeCircleLogoTexture() {
-      const c = document.createElement('canvas');
-      c.width = 512; c.height = 512;
-      const ctx = c.getContext('2d');
-      const cx = 256, cy = 256;
-
-      // light-blue filled circle (the "painted" decal panel)
-      ctx.fillStyle = '#b8d4e0';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 244, 0, Math.PI * 2);
-      ctx.fill();
-
-      const ink = '#1a232b';
-      ctx.strokeStyle = ink;
-      ctx.fillStyle = ink;
-
-      // outer ring
-      ctx.lineWidth = 8;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 220, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 196, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // diamond
-      ctx.lineWidth = 14;
-      ctx.lineJoin = 'round';
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - 130);
-      ctx.lineTo(cx + 130, cy);
-      ctx.lineTo(cx, cy + 130);
-      ctx.lineTo(cx - 130, cy);
-      ctx.closePath();
-      ctx.stroke();
-
-      // TAP text
-      ctx.font = '900 76px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('TAP', cx, cy - 4);
-
-      // home plate inside the diamond, below TAP
-      ctx.lineWidth = 8;
-      ctx.beginPath();
-      ctx.moveTo(cx - 28, cy + 56);
-      ctx.lineTo(cx + 28, cy + 56);
-      ctx.lineTo(cx + 28, cy + 80);
-      ctx.lineTo(cx,      cy + 104);
-      ctx.lineTo(cx - 28, cy + 80);
-      ctx.closePath();
-      ctx.stroke();
-
-      const tex = new THREE.CanvasTexture(c);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.anisotropy = 8;
-      return tex;
-    }
-
     // Motivational quote on the back wall (replaces the TAP lockup that used to live here).
     // Auto-fits the quote font size to keep the text within the canvas, then
     // scales the attribution proportionally.
@@ -872,19 +821,6 @@
       decal.position.set(xPos, 7.5, 0.01); // z=0 interior face, default normal faces +z (into building)
       scene.add(decal);
     });
-
-    // Floor circle decal in the right-strip area (straddles the PVC / rubber edge).
-    // z=19.1 keeps the painted circle clear of the 14' net (z=15.17).
-    {
-      const tex = makeCircleLogoTexture();
-      const floorLogo = new THREE.Mesh(
-        new THREE.PlaneGeometry(8, 8),
-        new THREE.MeshBasicMaterial({ map: tex, transparent: true })
-      );
-      floorLogo.rotation.x = -Math.PI / 2;
-      floorLogo.position.set(25, 0.06, 19.1);
-      scene.add(floorLogo);
-    }
 
     // TAP Athletes Pitching Academy logo in the middle of the grey PVC field
     // (2026-10-01). Artwork is 02_Marketing/Logos "small logo version" with its
