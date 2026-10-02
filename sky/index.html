@@ -240,6 +240,8 @@
          - med ball rack at x ~63.8..69.4, z = 22.9..24.5 (dumbbell-rack .glb + procedural med balls)
          - dumbbell rack at x ~71..76.6, z = 22.9..24.5 (dumbbell-rack .glb)
        Door: on front wall (x = 0), span z = 7.375..10.375 (per architect: 7'-4 1/2" from z=0 edge)
+       Back wall (x = 80): pedestrian door on the left, z = 4..7; 10' garage roll-up
+         on the right, z = 11..21 (right edge 4' off the right wall)
     ────────────────────────────────────────────────────────────────── */
 
     const PAL = {
@@ -418,21 +420,25 @@
 
     // Back short wall (x=80) — with garage roll-up + pedestrian back door
     {
-      // Garage roll-up door (centered on the back wall, 2026-05-09)
+      // Door layout per Eugene 2026-10-01 (from memory, not yet measured):
+      // pedestrian door on the LEFT, garage door on the right.
+      // Garage roll-up door: 10 ft wide, its right edge 4 ft off the right wall.
       const ROLL_W = 10, ROLL_H = 8;
-      const ROLL_Z1 = 7.5, ROLL_Z2 = ROLL_Z1 + ROLL_W;  // z=7.5..17.5 (centered)
+      const ROLL_Z2 = 25 - 4, ROLL_Z1 = ROLL_Z2 - ROLL_W;  // z=11..21
 
-      // Pedestrian back door (shifted proportionally with the bay door)
+      // Pedestrian back door: 3 ft wide, centered in the wall left of the garage
+      // door (4 ft each side on this 25 ft model; ~3'-7" each side at the
+      // as-built 24'-2" width).
       const PED_W = 3, PED_H = 7;
-      const PED_Z1 = 20.5, PED_Z2 = PED_Z1 + PED_W;     // z=20.5..23.5
+      const PED_Z1 = (ROLL_Z1 - PED_W) / 2, PED_Z2 = PED_Z1 + PED_W;     // z=4..7
 
       // Wall segments around the two openings
-      // z=0..ROLL_Z1: left of garage
-      scene.add(wall(WALL_T, WALL_H, ROLL_Z1, 80 + WALL_T/2, WALL_H/2, ROLL_Z1/2));
-      // z=ROLL_Z2..PED_Z1: between garage and pedestrian
-      scene.add(wall(WALL_T, WALL_H, PED_Z1 - ROLL_Z2, 80 + WALL_T/2, WALL_H/2, (ROLL_Z2 + PED_Z1)/2));
-      // z=PED_Z2..25: right of pedestrian
-      scene.add(wall(WALL_T, WALL_H, 25 - PED_Z2, 80 + WALL_T/2, WALL_H/2, (PED_Z2 + 25)/2));
+      // z=0..PED_Z1: left of pedestrian
+      scene.add(wall(WALL_T, WALL_H, PED_Z1, 80 + WALL_T/2, WALL_H/2, PED_Z1/2));
+      // z=PED_Z2..ROLL_Z1: between pedestrian and garage
+      scene.add(wall(WALL_T, WALL_H, ROLL_Z1 - PED_Z2, 80 + WALL_T/2, WALL_H/2, (PED_Z2 + ROLL_Z1)/2));
+      // z=ROLL_Z2..25: right of garage
+      scene.add(wall(WALL_T, WALL_H, 25 - ROLL_Z2, 80 + WALL_T/2, WALL_H/2, (ROLL_Z2 + 25)/2));
 
       // Lintel above garage (y = 8..14)
       scene.add(wall(WALL_T, WALL_H - ROLL_H, ROLL_W, 80 + WALL_T/2, ROLL_H + (WALL_H - ROLL_H)/2, (ROLL_Z1 + ROLL_Z2)/2));
@@ -845,14 +851,14 @@
     const lockupTex = makeLockupTexture();
 
     // Back wall — motivational quote (was TAP lockup).
-    // Positioned in the lintel above the centered garage door (garage z=7.5..17.5,
-    // lintel y=8..14). z=12.5 centers it on the bay door.
+    // Positioned in the lintel above the garage door (garage z=11..21,
+    // lintel y=8..14). z=16 centers it on the bay door.
     {
       const decal = new THREE.Mesh(
         new THREE.PlaneGeometry(10, 2.5),
         new THREE.MeshBasicMaterial({ map: makeQuoteTexture(), transparent: true })
       );
-      decal.position.set(79.95, 10.5, 12.5); // y=10.5 in lintel (8..14), z=12.5 centered on garage
+      decal.position.set(79.95, 10.5, 16); // y=10.5 in lintel (8..14), z=16 centered on garage
       decal.rotation.y = -Math.PI / 2;
       scene.add(decal);
     }
