@@ -222,7 +222,7 @@
            doors (x = 70..80), 4' along each long wall (z = 0..4, z = 21..25)
          - smooth grey PVC: x = 10..70, z = 4..21
          - no turf, no concrete pads
-       Pitching net:   x = 7..77, z = 1.17..15.17, y = 0..11   (14' × 70' × 11')
+       Pitching net:   x = 7..77, z = 1.17..15.17, y = 0..13   (14' × 70' × 13')
          - front edge 7' in from the front door, back edge 3' short of the back doors
          - z=0 wall: 2" foam wall padding, then 1 ft gap, then cage net
          - one mound, centered on the net width: black Portolite XL (Oversized), 10'-6" × 5' × 10"
@@ -837,7 +837,7 @@
     }
 
     /* ─────────────────────────────────────────────────────────────────
-       PITCHING NET — 14' × 70' × 11' (x=7..77, z=1.17..15.17, h=11)
+       PITCHING NET — 14' × 70' × 13' (x=7..77, z=1.17..15.17, h=13)
        Front edge 7 ft in from the front door; back edge 3 ft short of the
        back doors (matches specs/as-built-2026-09-22.md).
        Cage net offset from z=0 wall by 2" pad thickness + 1 ft buffer.
@@ -848,7 +848,7 @@
     const cageZ1 = PAD_THK + PAD_GAP;     // ~1.17
     const cageZ2 = cageZ1 + 14;           // ~15.17 (14 ft net width)
     const cageZC = (cageZ1 + cageZ2) / 2; // ~8.17 — single lane centerline
-    const cageH = 11;
+    const cageH = 13;   // raised from 11 on 2026-10-01; 1 ft below the 14 ft model ceiling
 
     // Home plate x — the plate's BACK POINT (catcher side). Rubber sits at
     // x=10.5 (mound starts 2 ft inside the front net), so 60'-6" lands the
