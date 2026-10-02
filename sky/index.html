@@ -231,7 +231,8 @@
          - bathroom 7' × 7' outside footprint (as-built 2026-09-22) flush in the front corner,
            x = 0..7, z = 18..25 — leaves a ~2'-10" walkway to the net
        Entry zone (x = 0..7, in front of the net):
-         - L-shaped front desk + Acer laptop left of the front door, x = 2.5..6.5, z = 2.3..6.8
+         - L-shaped front desk + Acer laptop pressed into the front-left corner,
+           x = 0.3..4.3, z = 0.05..4.55 (legs along the glass and the left wall)
          - mirror wall along z = 24.7, x = 10..40
          - classroom nook at x ~41..51: whiteboard + TV on the z=25 wall (centers ~5' up),
            6 chairs in 2 rows of 3 facing the wall
@@ -1136,8 +1137,8 @@
       // 7' × 7' OUTSIDE footprint (as-built 2026-09-22; supersedes the architect
       // 6'-11 1/2" × 8'-8 1/2" interior note). bx/bz are wall centerlines — walls
       // are 0.2 thick, so the outer faces land on x=7 and z=18.
-      // Door is on the wall at x=bx2 (gym-facing, mirror side). 1×1 ft floor grate
-      // sits to the right of the door (-z side) in the gym floor.
+      // Door is on the wall at x=bx2 (gym-facing, mirror side). No floor grate
+      // (retired in the as-built notes).
       const BATH_OUT = 7;
       const bx1 = 0.35, bx2 = BATH_OUT - 0.1;
       const bz2 = 25, bz1 = bz2 - BATH_OUT + 0.1;
@@ -1192,26 +1193,6 @@
         sign.rotation.y = -Math.PI / 2; // face +x toward gym
         sign.position.set(bx2 + 0.15, 6, doorCenterZ);
         scene.add(sign);
-      }
-
-      // Floor grate (1×1 ft, code-required) — gym floor, tucked into the corner
-      // where the bathroom's gym-facing wall meets the side wall at z=bz1
-      // (right edge when looking at the bathroom from the gym).
-      {
-        const grateW = 1, grateD = 1, grateThk = 0.05;
-        const grateMat = new THREE.MeshStandardMaterial({
-          color: 0x2a2724, roughness: 0.85, metalness: 0.4
-        });
-        const grate = new THREE.Mesh(
-          new THREE.BoxGeometry(grateW, grateThk, grateD),
-          grateMat
-        );
-        grate.position.set(
-          bx2 + 0.1 + grateW/2,    // just outside the gym-facing wall
-          grateThk/2,              // sitting on the floor
-          bz1 + grateD/2           // flush with the side wall at z=bz1
-        );
-        scene.add(grate);
       }
     }
 
@@ -1509,18 +1490,21 @@
     });
 
     /* ─────────────────────────────────────────────────────────────────
-       FRONT DESK — L-shaped, in the entry zone left of the front door
-       (x=2.5..6.5, z=2.3..6.8), between the glass and the front net.
-       Main run parallel to the glass; the return runs back along the door
-       side so it meets people as they walk in. The seat faces the front
-       (-x), toward incoming traffic; staff walk in along the left wall.
-       Acer laptop on the main run. Sizes assumed: 4.5' + 4' legs, 2' deep,
-       29" high.
+       FRONT DESK — L-shaped, pressed into the front-left corner
+       (x=0.3..4.3, z=0.05..4.55). One leg runs along the front glass, the
+       other along the left wall, so the desk hugs both walls and stays
+       ~2.7 ft clear of the front net (x=7). The seat sits in the elbow
+       facing the glass (-x), toward people coming in; the open side faces
+       the room. Acer laptop on the glass leg. Sizes assumed: 4.5' + 4'
+       legs, 2' deep, 29" high.
     ────────────────────────────────────────────────────────────────── */
     {
       const DESK_H = 2.42, TOP_T = 0.1, PANEL_T = 0.08;
-      const mainX1 = 2.5, mainX2 = 4.5, mainZ1 = 2.3, mainZ2 = 6.8;   // main run
-      const retX2 = 6.5, retZ1 = 4.8;                                 // return (door side)
+      const DEPTH = 2;
+      const glassX = 0.3, wallZ = 0.05;            // inside of the glass mullions / left wall
+      const legAZ2 = wallZ + 4.5;                  // glass leg: 4.5' along the glass
+      const elbowX = glassX + DEPTH;
+      const legBX2 = elbowX + 2;                   // wall leg: 4' along the left wall (incl. the elbow)
       const panelMat = new THREE.MeshStandardMaterial({ color: 0x2a3640, roughness: 0.7 });
       const panelH = DESK_H - TOP_T;
 
@@ -1531,23 +1515,22 @@
         scene.add(m);
       }
       // tops
-      slab(mainX2 - mainX1, TOP_T, mainZ2 - mainZ1, (mainX1 + mainX2)/2, DESK_H - TOP_T/2, (mainZ1 + mainZ2)/2, matWood);
-      slab(retX2 - mainX2, TOP_T, mainZ2 - retZ1, (mainX2 + retX2)/2, DESK_H - TOP_T/2, (retZ1 + mainZ2)/2, matWood);
-      // visitor-facing panels: front (glass side) and door side
-      slab(PANEL_T, panelH, mainZ2 - mainZ1, mainX1 + PANEL_T/2, panelH/2, (mainZ1 + mainZ2)/2, panelMat);
-      slab(retX2 - mainX1, panelH, PANEL_T, (mainX1 + retX2)/2, panelH/2, mainZ2 - PANEL_T/2, panelMat);
-      // end panels: wall end of the main run, net end of the return
-      slab(mainX2 - mainX1, panelH, PANEL_T, (mainX1 + mainX2)/2, panelH/2, mainZ1 + PANEL_T/2, panelMat);
-      slab(PANEL_T, panelH, mainZ2 - retZ1, retX2 - PANEL_T/2, panelH/2, (retZ1 + mainZ2)/2, panelMat);
+      slab(DEPTH, TOP_T, legAZ2 - wallZ, glassX + DEPTH/2, DESK_H - TOP_T/2, (wallZ + legAZ2)/2, matWood);
+      slab(legBX2 - elbowX, TOP_T, DEPTH, (elbowX + legBX2)/2, DESK_H - TOP_T/2, wallZ + DEPTH/2, matWood);
+      // back panel along the glass (visible from outside)
+      slab(PANEL_T, panelH, legAZ2 - wallZ, glassX + PANEL_T/2, panelH/2, (wallZ + legAZ2)/2, panelMat);
+      // end panels: door end of the glass leg, net end of the wall leg
+      slab(DEPTH, panelH, PANEL_T, glassX + DEPTH/2, panelH/2, legAZ2 - PANEL_T/2, panelMat);
+      slab(PANEL_T, panelH, DEPTH, legBX2 - PANEL_T/2, panelH/2, wallZ + DEPTH/2, panelMat);
 
-      const seatZ = 3.5;
-      chair(5.5, seatZ, -Math.PI / 2);   // facing the front door side (-x)
+      const seatZ = 3.2;
+      chair(elbowX + 1.1, seatZ, -Math.PI / 2);   // facing the front glass (-x)
 
-      // Acer laptop — open on the main run, screen toward the seat
+      // Acer laptop — open on the glass leg, screen toward the seat
       {
         const lapW = 1.17, lapD = 0.8;   // ~14" wide
         const shellMat = new THREE.MeshStandardMaterial({ color: 0xb9bcc0, roughness: 0.4, metalness: 0.6 });
-        const hingeX = 3.25;
+        const hingeX = glassX + 0.7;
         const base = new THREE.Mesh(new THREE.BoxGeometry(lapD, 0.05, lapW), shellMat);
         base.position.set(hingeX + lapD/2, DESK_H + 0.025, seatZ);
         base.castShadow = true;
