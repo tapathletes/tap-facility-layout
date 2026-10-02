@@ -228,8 +228,8 @@
          - one mound, centered on the net width
          - black batter's mat (boxes + catcher's tab) around the plate, x ~67.1..76.8
        Right-side strip: z = 15.17..25 (~9.83' wide)
-         - bathroom 6'-11 1/2" × 8'-8 1/2" (architect 2026-05-09) flush in the front corner,
-           x = 0.35..7.31, z = 16.29..25
+         - bathroom 7' × 7' outside footprint (as-built 2026-09-22) flush in the front corner,
+           x = 0..7, z = 18..25 — leaves a ~2'-10" walkway to the net
        Entry zone (x = 0..7, in front of the net):
          - L-shaped front desk + Acer laptop left of the front door, x = 2.5..6.5, z = 2.3..6.8
          - mirror wall along z = 24.7, x = 10..40
@@ -1126,18 +1126,21 @@
     }
 
     /* ─────────────────────────────────────────────────────────────────
-       BATHROOM (x=0.35..7.31, z=16.29..25, h=9) — flush in the front-right corner
+       BATHROOM (x=0..7, z=18..25, h=9) — 7' × 7' outside footprint, flush
+       in the front-right corner (specs/as-built-2026-09-22.md).
        Right wall (z=25) shared with building wall; entry-side wall sits
-       against the inside of the front glass mullions (moved 2026-10-01 from
-       x=3). Door on the gym-facing (x=bx2) wall.
+       against the inside of the front glass mullions. Door on the
+       gym-facing (x=bx2) wall, whose outer face lines up with the net front.
     ────────────────────────────────────────────────────────────────── */
     {
-      // Bathroom interior per architect spec 2026-05-09: 8'-8 1/2" × 6'-11 1/2".
-      // Long side (8'-8.5") runs along z; short side (6'-11.5") along x.
-      // Door is on the LONG wall at x=bx2 (gym-facing, mirror side). 1×1 ft floor grate
-      // sits to the right of the door (-z side) in the gym floor — code-required, can't be covered.
-      const bx1 = 0.35, bx2 = bx1 + 6 + 11.5/12;
-      const bz2 = 25, bz1 = bz2 - (8 + 8.5/12);
+      // 7' × 7' OUTSIDE footprint (as-built 2026-09-22; supersedes the architect
+      // 6'-11 1/2" × 8'-8 1/2" interior note). bx/bz are wall centerlines — walls
+      // are 0.2 thick, so the outer faces land on x=7 and z=18.
+      // Door is on the wall at x=bx2 (gym-facing, mirror side). 1×1 ft floor grate
+      // sits to the right of the door (-z side) in the gym floor.
+      const BATH_OUT = 7;
+      const bx1 = 0.35, bx2 = BATH_OUT - 0.1;
+      const bz2 = 25, bz1 = bz2 - BATH_OUT + 0.1;
       const bh = 9;
       // entry-side wall (x=bx1), faces -x toward entry pad
       scene.add(mkBath(0.2, bh, bz2-bz1, bx1, bh/2, (bz1+bz2)/2));
