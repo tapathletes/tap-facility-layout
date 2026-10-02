@@ -233,9 +233,9 @@
        Entry zone (x = 0..7, in front of the net):
          - L-shaped front desk + Acer laptop pressed into the front-left corner,
            x = 0.3..4.3, z = 0.05..4.55 (main leg along the glass, return leg facing the door)
-         - mirror wall along z = 24.7, x = 10..40
+         - gym mirrors on the z=25 wall: three 5' × 7' panels, x = 17.5..32.5, 1' to 8' off the floor
          - classroom nook at x ~41..51: whiteboard + TV on the z=25 wall (centers ~5' up),
-           6 chairs in 2 rows of 3 facing the wall
+           3 chairs facing the wall on the rubber border + 3 turned to face the pitching lane
          - kettlebell rack at x = 52..60, z = 22..24.5 (.glb kettlebells on primitive base)
          - med ball rack at x ~63.8..69.4, z = 22.9..24.5 (dumbbell-rack .glb + procedural med balls)
          - dumbbell rack at x ~71..76.6, z = 22.9..24.5 (dumbbell-rack .glb)
@@ -1197,35 +1197,51 @@
     }
 
     /* ─────────────────────────────────────────────────────────────────
-       MIRROR WALL — on right wall (z=25), x=10..40, h=10
+       GYM MIRRORS — on right wall (z=25): three 5' × 7' panels side by side,
+       15 ft total (x=17.5..32.5), from 1 ft off the floor up to 8 ft.
+       Sized 2026-10-01 (was one 30' × 10' mirror wall, x=10..40).
     ────────────────────────────────────────────────────────────────── */
     {
+      const PANELS = 3, PANEL_W = 5, MIRROR_H = 7, MIRROR_Y0 = 1;
+      const MIRROR_W = PANELS * PANEL_W;
+      const mirrorX = 25, mirrorY = MIRROR_Y0 + MIRROR_H / 2;
+
       // Real-time reflective mirror — renders the scene from a mirrored camera
       // each frame and projects it onto the surface. Reflects the gym in front.
       // textureWidth/Height match the viewport for a sharp, undimmed reflection.
-      const mirror = new Reflector(new THREE.PlaneGeometry(30, 10), {
+      // One reflector spans all three panels (each reflector is a full extra
+      // render pass); the seams between panels are drawn over it.
+      const mirror = new Reflector(new THREE.PlaneGeometry(MIRROR_W, MIRROR_H), {
         clipBias: 0.003,
         textureWidth:  Math.round(window.innerWidth  * window.devicePixelRatio),
         textureHeight: Math.round(window.innerHeight * window.devicePixelRatio),
         color: 0xffffff, // no tint — let the reflected scene's own colors come through
       });
-      mirror.position.set(25, 5, 24.5); // slightly forward of the wall so the reflection plane sits clearly in the gym
+      mirror.position.set(mirrorX, mirrorY, 24.88); // just proud of the wall, as a mounted mirror sits
       mirror.rotation.y = Math.PI;      // face -z (into the building)
       scene.add(mirror);
 
+      // slim frame around the set
       const frame = new THREE.Mesh(
-        new THREE.BoxGeometry(30.4, 10.4, 0.15),
+        new THREE.BoxGeometry(MIRROR_W + 0.2, MIRROR_H + 0.2, 0.1),
         matMirrorFrame
       );
-      frame.position.set(25, 5, 24.92);
+      frame.position.set(mirrorX, mirrorY, 24.94);
       scene.add(frame);
 
-      // floor tape line in front of mirror (z=23, x=10..40)
+      // seams between the panels
+      for (let i = 1; i < PANELS; i++) {
+        const seam = new THREE.Mesh(new THREE.BoxGeometry(0.05, MIRROR_H, 0.02), matMirrorFrame);
+        seam.position.set(mirrorX - MIRROR_W / 2 + i * PANEL_W, mirrorY, 24.87);
+        scene.add(seam);
+      }
+
+      // floor tape line in front of the mirrors (z=23, same span)
       const tape = new THREE.Mesh(
-        new THREE.BoxGeometry(30, 0.005, 0.1),
+        new THREE.BoxGeometry(MIRROR_W, 0.005, 0.1),
         new THREE.MeshStandardMaterial({ color: PAL.brand, emissive: PAL.brand, emissiveIntensity: 0.3 })
       );
-      tape.position.set(25, 0.07, 23);
+      tape.position.set(mirrorX, 0.07, 23);
       scene.add(tape);
 
     }
@@ -1287,7 +1303,8 @@
        CLASSROOM NOOK — against the mirror-side wall (z=25), x ~41..51
        Sits where the med ball rack used to be (the rack moved back to the
        old barbell-rack spot). Whiteboard + TV on the wall, centers ~5 ft
-       off the floor; 6 chairs in 2 rows of 3 facing the wall.
+       off the floor; 3 chairs facing the wall on the rubber border, and 3
+       turned around behind them as a viewing row facing the pitching lane.
     ────────────────────────────────────────────────────────────────── */
     {
       const WALL_Z = 25;        // interior face of the mirror-side wall
@@ -1331,9 +1348,12 @@
         scene.add(screen);
       }
 
-      // Chairs — 6 total, 2 rows of 3, facing the wall (+z)
-      [20.3, 17.6].forEach(z => {          // front row ~4.7 ft off the wall, back row behind it
-        [43.8, 46.0, 48.2].forEach(x => chair(x, z));
+      // Chairs — 6 total, 2 rows of 3, back to back (2026-10-01):
+      //   classroom row on the rubber border, ~2.3 ft off the wall, facing the board (+z)
+      //   viewing row turned around to face the pitching lane (-z), 1.7 ft off the net
+      [43.8, 46.0, 48.2].forEach(x => {
+        chair(x, 22.0);
+        chair(x, 17.6, Math.PI);
       });
     }
 
